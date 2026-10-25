@@ -1,7 +1,7 @@
-# daihon-pdf
+# 4iii（しーっ）
 
-音声作品の台本（.txt）を、縦書きの HTML（ト書きあり／なし）にして PDF にします。
-[daihon](https://github.com/komuggi/daihon)（nvim のプラグイン）の「台本 → 縦書きの HTML」の所を、nvim なしで動く JavaScript にした物です。書き方・設定・出てくる HTML は daihon と同じです（ルビだけは js 版にしかありません）。
+音声作品の台本（.txt）を、縦書きの HTML（ト書きあり／なし）にして PDF にします。セリフだけの文字数も数えます。
+書き方・設定・出てくる HTML は、nvim のプラグイン [daihon](https://github.com/komuggi/daihon) と同じです（元は daihon の「台本 → 縦書きの HTML」の所を、nvim なしで動くようにした物。ルビは 4iii にしかありません）。
 
 ## ページ（Google ドキュメントから貼って PDF に）
 
@@ -17,9 +17,9 @@ python3 -m http.server   # このフォルダで打つ
   - どれにも当たらない行がセリフで、文字数はセリフだけを数えます
 - 「縦書き／横書き」「ト書きあり／なし」で切り替え、「印刷して PDF に」→ 印刷の画面で「PDF に保存」
 - ルビ：`|漢字《かんじ》`・`漢字《かんじ》`（| が無いときは《 の前に続く漢字）・`[[rb:漢字 > かんじ]]`（pixiv）を読みます。記号は「ルビの書き方」で変えられます。ルビの字は文字数に入れません
-- 「この設定で保存」で、記号などの設定を `daihon.json` としてこの PC に落とします。次からは「設定を開く」で選びます（ログインは要りません。CLI もそのまま読めます）
+- 「この設定で保存」で、記号などの設定を `4iii.json` としてこの PC に落とします。次からは「設定を開く」で選びます（ログインは要りません。CLI もそのまま読めます）
 - 貼るとき、日本語入力のままの記号（行の頭の `／／` `＃` `（` `￥`、`｛｝` など）は daihon で打ったときと同じに半角にします
-- 設定は「設定」の欄に daihon.json の形で書きます。塊（`{名前}`）は「塊を読む」で parts/ の .txt を選びます
+- 設定は「設定」の欄に 4iii.json の形で書きます。塊（`{名前}`）は「塊を読む」で parts/ の .txt を選びます
 - 貼った台本は、どこにも送らず保存もしません（閉じると消えます）
 
 ### 台本を受け取らない・覚えない
@@ -31,13 +31,13 @@ python3 -m http.server   # このフォルダで打つ
 ## CLI
 
 ```sh
-node bin/daihon-pdf.js 台本.txt [--config daihon.json] [--out out/] [--no-pdf]
+node bin/4iii.js 台本.txt [--config 4iii.json] [--out out/] [--no-pdf]
 ```
 
 ト書きあり／なしの HTML を書き、`vivliostyle` があれば PDF も作ります（無ければ HTML だけ）。
-`--config` が無ければ、台本と同じフォルダの `daihon.json` を読みます。塊は設定のあるフォルダの `parts/` から読みます。
+`--config` が無ければ、台本と同じフォルダの `4iii.json`（無ければ `daihon.json`）を読みます。塊は設定のあるフォルダの `parts/` から読みます。
 
-## 設定（daihon.json）
+## 設定（4iii.json）
 
 daihon の `daihon.lua` と同じ意味・同じ既定値を JSON で書きます。例：`test/fixtures/sample/daihon.json`。
 nvim の画面だけの設定（keys・show_count など）は読んでも使いません。`export.pdf.command` は使いません。

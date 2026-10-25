@@ -1,5 +1,5 @@
-// daihon-pdf の部品：台本の文字列 → 縦書きの HTML（ト書きあり／なし）
-// CLI（bin/daihon-pdf.js）とブラウザのページ（web/）の両方がここを使う
+// 4iii の部品：台本の文字列 → 縦書きの HTML（ト書きあり／なし）
+// CLI（bin/4iii.js）とブラウザのページ（web/）の両方がここを使う
 import { makeConfig } from "./config.js";
 import { parse } from "./parse.js";
 import { context, summary } from "./count.js";

@@ -14,7 +14,7 @@ const parts = new Map(); // 名前 → 行の配列
 // 画面で見るときだけの見た目（印刷には効かない）
 const SCREEN_CSS = "@media screen { html { background: #fff; } body { padding: 24px; } }";
 
-let project = structuredClone(fields.START); // 設定の正本（daihon.json の形）。枠と「設定」の欄はここを映す
+let project = structuredClone(fields.START); // 設定の正本（4iii.json の形）。枠と「設定」の欄はここを映す
 let cfg = makeConfig(project);
 
 const box = {
@@ -150,7 +150,7 @@ $("save").addEventListener("click", () => {
   const url = URL.createObjectURL(new Blob([JSON.stringify(project, null, 2) + "\n"], { type: "application/json" }));
   const a = document.createElement("a");
   a.href = url;
-  a.download = "daihon.json";
+  a.download = "4iii.json";
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
