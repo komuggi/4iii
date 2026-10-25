@@ -49,18 +49,19 @@
   }
 }
 
-/* 小さいボタン（設定の保存・開く） */
+/* 小さいボタン（設定の保存・開く）。指を乗せると白黒が入れ替わる */
 @utility btn {
   border: 1px solid var(--color-neutral-300);
   border-radius: 6px;
   background: #fff;
   padding: 3px 10px;
   cursor: pointer;
-  &:hover, &:has(input:focus-visible) { border-color: var(--color-neutral-900); }
+  transition: background-color .15s, color .15s, border-color .15s;
+  &:hover, &:has(input:focus-visible) { border-color: var(--color-neutral-900); background: var(--color-neutral-900); color: #fff; }
   @variant dark {
     border-color: var(--color-neutral-700);
     background: var(--color-sheet-dark);
-    &:hover, &:has(input:focus-visible) { border-color: var(--color-neutral-100); }
+    &:hover, &:has(input:focus-visible) { border-color: var(--color-neutral-100); background: var(--color-neutral-100); color: var(--color-neutral-900); }
   }
 }
 
