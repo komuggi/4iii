@@ -19,6 +19,7 @@ let project = structuredClone(fields.START); // 設定の正本（4iii.json の�
 let cfg = makeConfig(project);
 
 const box = {
+  heading: $("f-heading"),
   se: $("f-se"),
   shiji: $("f-shiji"),
   other: $("f-other"),
@@ -45,6 +46,7 @@ function useProject(next, showJson) {
   }
   if (showJson) configBox.value = JSON.stringify(project, null, 2);
   const f = fields.read(project);
+  box.heading.value = f.heading;
   box.se.value = f.se;
   box.shiji.value = f.shiji;
   box.other.value = f.other;
@@ -63,6 +65,7 @@ function useProject(next, showJson) {
 /** 枠の中身を設定に書く */
 function fromFields() {
   const next = fields.write(project, {
+    heading: box.heading.value,
     se: box.se.value,
     shiji: box.shiji.value,
     other: box.other.value,

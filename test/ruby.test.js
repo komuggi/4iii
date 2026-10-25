@@ -107,3 +107,23 @@ test("枠：ルビを切る・自分の記号にする", () => {
     pixiv: false,
   });
 });
+
+test("見出しの枠：記号（##）は頭を消し、字（トラック）は「トラック①」のまま見出しにして数える", () => {
+  const start = fields.read(fields.START);
+  assert.equal(start.heading, "##");
+  const project = fields.write(fields.START, { ...start, heading: "##、トラック" });
+  const cfg = makeConfig({ ...project, blocks: false });
+  const res = render("■仕様\nトラック①\nこんにちは\n## Track 02\nさようなら\n", cfg, { name: "台本" });
+  const heads = res.records.filter((r) => r.kind === "見出し");
+  assert.deepEqual(heads.map((r) => r.title), ["トラック①", "Track 02"]);
+  assert.deepEqual(heads.map((r) => res.summary.headings[r.lnum]), [5, 5]);
+  assert.equal(fields.read(project).heading, "##、トラック");
+  // "## " の後ろの空白は前の設定のまま残す・# の見出し（数えない）は消さない
+  assert.ok(project.headings.some((h) => !h.count && h.prefix === "# "));
+  assert.ok(project.headings.some((h) => h.count && h.prefix.includes("## ")));
+});
+
+test("見出しの枠を空にすると、トラックの見出しを使わない", () => {
+  const project = fields.write(fields.START, { ...fields.read(fields.START), heading: "" });
+  assert.equal(project.headings.filter((h) => h.count).length, 0);
+});

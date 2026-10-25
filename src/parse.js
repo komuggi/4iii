@@ -107,7 +107,8 @@ export function parse(lines, cfg) {
           r.kind = "見出し";
           r.heading = h;
           r.level = h.level;
-          r.title = trim(t.slice(p.length));
+          // keep_prefix（4iii だけ）：「トラック①」のように頭の字も見出しの文として残す
+          r.title = h.keep_prefix ? t : trim(t.slice(p.length));
           break;
         }
       }

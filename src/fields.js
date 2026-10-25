@@ -1,4 +1,4 @@
-// ページの枠（SE・コメントと演技指示・その他・縦横・ルビ）と、設定（daihon.json の形）を行き来する。画面には触らない
+// ページの枠（見出し・SE・コメントと演技指示・その他・縦横・ルビ）と、設定（daihon.json の形）を行き来する。画面には触らない
 import { merge, defaults } from "./config.js";
 
 const asList = (x) => (x === undefined || x === null ? [] : Array.isArray(x) ? x : [x]);
@@ -37,6 +37,7 @@ export function read(project) {
   const find = (name) => types.find((t) => t && t.name === name);
   const out = {};
   for (const k of KINDS) out[k.key] = joinMarks(find(k.name)?.prefix);
+  out.heading = joinMarks(trackHeadings(cfg).flatMap((h) => asList(h.prefix).map((x) => String(x).trim())));
   out.otherOutput = find("メモ") ? find("メモ").output !== false : false;
   out.vertical = cfg.export.pdf.vertical !== false;
   const ruby = cfg.ruby;
@@ -47,6 +48,33 @@ export function read(project) {
   const names = new Set(KINDS.map((k) => k.name));
   out.extra = types.filter((t) => t && !names.has(t.name)).map((t) => t.name);
   return out;
+}
+
+// 見出しの枠に出すのは、文字数を数える見出し（トラック）。# のような数えない見出しは設定のまま
+const trackHeadings = (cfg) => asList(cfg.headings).filter((h) => isTable(h) && h.count);
+const hasWord = (mark) => /[\p{L}\p{N}]/u.test(mark);
+
+/** 見出しの枠の記号 → headings。記号（## など）は頭を消して見出しにし、字（トラック など）は頭も残す */
+export function writeHeadings(headings, text) {
+  const all = asList(headings).filter(isTable);
+  const old = all.filter((h) => h.count);
+  const base = old[0] ?? { level: 2, show: "%s : %s文字" };
+  const oldPrefixes = old.flatMap((h) => asList(h.prefix).map(String));
+  // 前の設定にある記号は、そのままの形で残す（"## " の後ろの空白など）
+  const asBefore = (m) => oldPrefixes.find((p) => p.trim() === m) ?? m;
+  const marks = splitMarks(text);
+  const make = (list, keep) => {
+    if (list.length === 0) return [];
+    const h = { level: base.level ?? 2, prefix: list, count: true };
+    if (base.show !== undefined) h.show = base.show;
+    if (keep) h.keep_prefix = true;
+    return [h];
+  };
+  return [
+    ...all.filter((h) => !h.count),
+    ...make(marks.filter((m) => !hasWord(m)).map(asBefore), false),
+    ...make(marks.filter(hasWord).map(asBefore), true),
+  ];
 }
 
 /** 枠の中身を設定に書いた、新しい設定を返す（枠に無い種類・ほかの設定はそのまま） */
@@ -69,6 +97,7 @@ export function write(project, f) {
   }
   for (const t of types) if (t && !names.has(t.name)) lineTypes.push(t);
   p.line_types = lineTypes;
+  if (f.heading !== undefined) p.headings = writeHeadings(cfg.headings, f.heading);
 
   // 縦書き・横書き。紙の大きさを書いていなければ、横書きは A4 縦にする
   p.export = isTable(p.export) ? p.export : {};
