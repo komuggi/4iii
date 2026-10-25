@@ -84,11 +84,18 @@ function fromFields() {
   if (useProject(next, true)) schedule();
 }
 
-/** 行の種類 → 台本の欄の色（字の太さは変えない。変えるとカーソルの位置がずれる） */
+// 行の種類ごとの台本の欄の色（字の太さは変えない。変えるとカーソルの位置がずれる）
+const KIND_CLASS = {
+  head: "underline decoration-neutral-200 underline-offset-[5px] dark:decoration-neutral-700",
+  togaki: "text-neutral-500 dark:text-neutral-400",
+  off: "text-neutral-400 dark:text-neutral-500",
+};
+
+/** 行の種類 → 台本の欄の色の class */
 function kindClass(r) {
   if (!r || r.kind === "セリフ" || r.kind === "空行") return "";
-  if (r.kind === "見出し") return "k-head";
-  return r.output === false ? "k-off" : "k-togaki";
+  if (r.kind === "見出し") return KIND_CLASS.head;
+  return r.output === false ? KIND_CLASS.off : KIND_CLASS.togaki;
 }
 
 /** 台本の欄の後ろの層に、色を分けた同じ文を書く（textarea の字は透明） */
@@ -113,7 +120,7 @@ function paint() {
 /** 全体の文字数と、見出し（トラック）ごとの文字数 */
 function showCounts(res, togaki) {
   const total = document.createElement("span");
-  total.className = "total";
+  total.className = "text-[15px] font-semibold tabular-nums";
   total.textContent = `全体 ${res.summary.total.toLocaleString()}文字`;
   status.replaceChildren(total);
   if (!togaki && !cfg.export.pdf.both) status.append("（設定の export.pdf.both が false なので、ト書きありだけ）");
@@ -122,7 +129,7 @@ function showCounts(res, togaki) {
   for (const issue of parser.checkRanges(res.records, cfg)) warns.push(`${issue.lnum}行目 ${issue.msg}`);
   for (const w of warns.slice(0, 5)) {
     const span = document.createElement("span");
-    span.className = "warn";
+    span.className = "text-amber-700 dark:text-amber-300";
     span.textContent = ` ／ ${w}`;
     status.append(span);
   }
@@ -132,14 +139,15 @@ function showCounts(res, togaki) {
   const top = Math.min(...heads.map((r) => r.level));
   tracks.replaceChildren(...heads.map((r) => {
     const li = document.createElement("li");
-    if (r.level > top) li.className = "sub";
+    li.className = "flex justify-between gap-4 text-neutral-500 dark:text-neutral-400";
+    if (r.level > top) li.classList.add("pl-4");
     const title = document.createElement("span");
     title.textContent = r.title;
     li.append(title);
     const n = res.summary.headings[r.lnum];
     if (n !== undefined) {
       const num = document.createElement("span");
-      num.className = "n";
+      num.className = "text-neutral-900 tabular-nums dark:text-neutral-100";
       num.textContent = n.toLocaleString();
       li.append(num);
     }

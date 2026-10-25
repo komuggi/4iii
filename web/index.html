@@ -1,336 +1,93 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" class="h-full max-md:h-auto">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- 外への通信を全部止める（台本をどこにも送らない）。読めるのはこのページと同じ所のスクリプトだけ -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data:; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<!-- 外への通信を全部止める（台本をどこにも送らない）。読めるのはこのページと同じ所のスクリプトと CSS だけ（プレビューの中の台本の CSS は inline） -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src data:; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <title>4iii</title>
 <link rel="icon" href="data:,">
-<style>
-:root {
-  --bg: #fcfcfc;
-  --sheet: #ffffff;
-  --ink: #1d1c1a;
-  --sub: #6e6b65;
-  --faint: #a6a29a;
-  --line: #e4e1db;
-  --warn: #9a6400;
-  --shadow: 0 1px 2px rgb(0 0 0 / .05), 0 6px 24px rgb(0 0 0 / .07);
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #161514;
-    --sheet: #1f1e1c;
-    --ink: #eceae6;
-    --sub: #a29f98;
-    --faint: #6e6b65;
-    --line: #2d2b28;
-    --warn: #e0b45c;
-    --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 6px 24px rgb(0 0 0 / .45);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #161514;
-  --sheet: #1f1e1c;
-  --ink: #eceae6;
-  --sub: #a29f98;
-  --faint: #6e6b65;
-  --line: #2d2b28;
-  --warn: #e0b45c;
-  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 6px 24px rgb(0 0 0 / .45);
-  color-scheme: dark;
-}
-* { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; }
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font: 14px/1.6 "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
-  display: flex;
-  flex-direction: column;
-}
-input, select, textarea, button { font: inherit; color: inherit; }
-button { cursor: pointer; }
-
-/* 上の行 */
-header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 28px;
-  align-items: center;
-  padding: 20px 24px 12px;
-}
-header h1 { margin: 0; font-size: 15px; letter-spacing: .08em; }
-header h1 small { margin-left: 8px; color: var(--faint); font-size: 12px; font-weight: 400; letter-spacing: 0; }
-.seg { display: inline-flex; align-items: center; }
-.seg label { padding: 2px 0; color: var(--faint); cursor: pointer; }
-.seg label + label::before { content: "/"; margin: 0 8px; color: var(--line); }
-.seg input { position: absolute; opacity: 0; pointer-events: none; }
-.seg label:has(input:checked) { color: var(--ink); }
-.seg label:has(input:focus-visible) { text-decoration: underline; text-underline-offset: 5px; }
-label.name { display: inline-flex; gap: 8px; align-items: baseline; color: var(--sub); }
-input[type="text"] {
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  background: transparent;
-  padding: 2px 0;
-  border-radius: 0;
-}
-input[type="text"]:focus { outline: none; border-bottom-color: var(--ink); }
-input[type="text"]:disabled { color: var(--faint); }
-label.name input { width: 9em; color: var(--ink); }
-button.export {
-  margin-left: auto;
-  background: transparent;
-  border: 1px solid var(--ink);
-  border-radius: 999px;
-  padding: 5px 16px;
-}
-button.export:hover { box-shadow: var(--shadow); }
-/* Export の選択肢：浮いているので、すりガラスと影で分ける */
-.menu[popover] {
-  position: fixed;
-  inset: auto;
-  margin: 0;
-  min-width: 13em;
-  border: 0;
-  border-radius: 12px;
-  padding: 6px;
-  color: var(--ink);
-  background: color-mix(in srgb, var(--sheet) 90%, transparent);
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  box-shadow: var(--shadow), 0 0 0 .5px var(--line);
-}
-.menu button {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  width: 100%;
-  background: none;
-  border: 0;
-  border-radius: 8px;
-  padding: 6px 10px;
-  text-align: left;
-}
-.menu button small { color: var(--faint); font-size: 12px; }
-.menu button:not(:disabled):hover { text-decoration: underline; text-underline-offset: 4px; }
-.menu button:disabled { color: var(--faint); cursor: default; }
-
-/* 左：台本・文字数・設定　右：プレビュー */
-main {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
-  gap: 24px;
-  padding: 8px 24px 24px;
-}
-.source { min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 20px; padding: 4px; margin: -4px; }
-
-/* 台本の欄：見えている字は後ろの色分けの層。textarea は字を透かして、カーソルと選択だけ */
-.editor {
-  position: relative;
-  flex: 1 0 22em;
-  background: var(--sheet);
-  border-radius: 10px;
-  box-shadow: var(--shadow);
-}
-.editor textarea, .editor pre {
-  margin: 0;
-  border: 0;
-  padding: 16px 18px;
-  font: 15px/1.9 "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
-  letter-spacing: 0;
-  font-feature-settings: normal;
-  tab-size: 4;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  word-break: normal;
-  scrollbar-gutter: stable;
-}
-.editor pre {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  color: var(--ink);
-}
-.editor textarea {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-  resize: none;
-  background: transparent;
-  color: transparent;
-  caret-color: var(--ink);
-  outline: none;
-  overflow: auto;
-}
-.editor textarea::placeholder { color: var(--faint); }
-.editor textarea::selection { background: rgb(120 120 120 / .25); }
-.k-togaki { color: var(--sub); }
-.k-off { color: var(--faint); }
-.k-head { text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 5px; }
-
-/* 文字数 */
-.counts { font-size: 13px; }
-.status { margin: 0; }
-.status .total { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.status .warn { color: var(--warn); }
-ol.tracks { list-style: none; margin: 8px 0 0; padding: 0; }
-ol.tracks li { display: flex; gap: 16px; justify-content: space-between; color: var(--sub); }
-ol.tracks li.sub { padding-left: 1em; }
-ol.tracks .n { color: var(--ink); font-variant-numeric: tabular-nums; }
-
-/* 設定 */
-details { font-size: 13px; }
-details + details { margin-top: 4px; }
-summary { color: var(--sub); cursor: pointer; padding: 2px 0; }
-summary:hover { color: var(--ink); }
-details[open] > summary { margin-bottom: 10px; }
-.marks {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 8px 16px;
-  align-items: baseline;
-}
-.marks > label:not(.check) { display: contents; color: var(--sub); }
-.marks > .check, .marks > .hint, .marks > .buttons { grid-column: 1 / -1; }
-.check { display: inline-flex; gap: 6px; align-items: center; }
-.buttons { display: flex; gap: 20px; flex-wrap: wrap; }
-.buttons button, .buttons .button {
-  background: none;
-  border: 0;
-  padding: 0;
-  color: var(--ink);
-  text-decoration: underline;
-  text-decoration-color: var(--line);
-  text-underline-offset: 4px;
-  cursor: pointer;
-}
-.buttons button:hover, .buttons .button:hover { text-decoration-color: var(--ink); }
-.buttons .button input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
-.buttons .button:has(input:focus-visible) { text-decoration-color: var(--ink); }
-.ruby { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; margin-bottom: 8px; }
-.ruby label:not(.check) { color: var(--sub); }
-.ruby input[type="text"] { width: 3em; margin-left: 6px; color: var(--ink); }
-details textarea {
-  width: 100%;
-  height: 12em;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: transparent;
-  padding: 8px 10px;
-  font: 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace;
-}
-details input[type="file"] { font-size: 12px; color: var(--sub); }
-.hint { color: var(--faint); font-size: 12px; line-height: 1.7; margin: 0; }
-.hint:empty { display: none; }
-.notes { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; }
-
-/* プレビュー：紙 */
-.preview { min-height: 0; display: flex; }
-.preview iframe {
-  flex: 1;
-  border: 0;
-  border-radius: 10px;
-  background: #fff;
-  box-shadow: var(--shadow);
-}
-
-@media (max-width: 760px) {
-  html, body { height: auto; }
-  header { padding: 16px 16px 8px; gap: 8px 20px; }
-  button.export { margin-left: 0; }
-  main { display: block; padding: 8px 16px 24px; }
-  .source { overflow: visible; }
-  .editor { height: 50vh; flex: none; }
-  .preview { height: 70vh; margin-top: 24px; }
-}
-</style>
+<link rel="stylesheet" href="./style.css">
 </head>
-<body>
-<header>
-  <h1>4iii<small>台本を縦書きの PDF に</small></h1>
-  <div class="seg" role="radiogroup" aria-label="ト書き">
-    <label><input type="radio" name="togaki" value="1" checked>ト書きあり</label>
-    <label><input type="radio" name="togaki" value="0">ト書きなし</label>
+<body class="flex h-full flex-col bg-paper font-sans text-sm text-neutral-900 antialiased max-md:h-auto dark:bg-night dark:text-neutral-100">
+<header class="flex flex-wrap items-center gap-x-7 gap-y-2 px-6 pt-5 pb-3 max-md:gap-x-5 max-md:px-4 max-md:pt-4">
+  <h1 class="text-[15px] font-semibold tracking-wide">4iii<small class="ml-2 text-xs font-normal tracking-normal text-neutral-400 dark:text-neutral-500">台本を縦書きの PDF に</small></h1>
+  <div class="inline-flex items-center" role="radiogroup" aria-label="ト書き">
+    <label class="cursor-pointer text-neutral-400 underline-offset-4 has-checked:text-neutral-900 has-[:focus-visible]:underline dark:text-neutral-500 dark:has-checked:text-neutral-100"><input type="radio" name="togaki" value="1" class="sr-only" checked>ト書きあり</label>
+    <label class="cursor-pointer text-neutral-400 underline-offset-4 before:mx-2 before:text-neutral-300 before:content-['/'] has-checked:text-neutral-900 has-[:focus-visible]:underline dark:text-neutral-500 dark:before:text-neutral-700 dark:has-checked:text-neutral-100"><input type="radio" name="togaki" value="0" class="sr-only">ト書きなし</label>
   </div>
-  <div class="seg" role="radiogroup" aria-label="書く向き">
-    <label><input type="radio" name="vertical" value="1" checked>縦書き</label>
-    <label><input type="radio" name="vertical" value="0">横書き</label>
+  <div class="inline-flex items-center" role="radiogroup" aria-label="書く向き">
+    <label class="cursor-pointer text-neutral-400 underline-offset-4 has-checked:text-neutral-900 has-[:focus-visible]:underline dark:text-neutral-500 dark:has-checked:text-neutral-100"><input type="radio" name="vertical" value="1" class="sr-only" checked>縦書き</label>
+    <label class="cursor-pointer text-neutral-400 underline-offset-4 before:mx-2 before:text-neutral-300 before:content-['/'] has-checked:text-neutral-900 has-[:focus-visible]:underline dark:text-neutral-500 dark:before:text-neutral-700 dark:has-checked:text-neutral-100"><input type="radio" name="vertical" value="0" class="sr-only">横書き</label>
   </div>
-  <label class="name">名前 <input type="text" id="name" value="台本" autocomplete="off" aria-label="ファイル名のもと"></label>
-  <button type="button" class="export" id="export" popovertarget="export-menu" aria-haspopup="menu">Export</button>
-  <div class="menu" id="export-menu" popover role="menu" aria-label="Export">
-    <button type="button" role="menuitem" data-format="pdf">PDF<small>印刷の画面から</small></button>
-    <button type="button" role="menuitem" data-format="txt" disabled>テキスト<small>.txt</small></button>
-    <button type="button" role="menuitem" data-format="md" disabled>Markdown<small>.md</small></button>
+  <label class="inline-flex items-baseline gap-2 text-neutral-500 dark:text-neutral-400">名前 <input type="text" id="name" value="台本" autocomplete="off" aria-label="ファイル名のもと" class="field w-36"></label>
+  <button type="button" id="export" popovertarget="export-menu" aria-haspopup="menu" class="ml-auto cursor-pointer rounded-full border border-neutral-900 px-4 py-1 transition-shadow hover:shadow-soft max-md:ml-0 dark:border-neutral-100 dark:hover:shadow-soft-dark">Export</button>
+  <!-- 浮いている選択肢なので、すりガラスと影で分ける（popover に display の class を付けない：閉じても出てしまう） -->
+  <div id="export-menu" popover role="menu" aria-label="Export" class="fixed inset-auto m-0 min-w-52 rounded-xl border-0 bg-white/90 p-1.5 text-neutral-900 shadow-soft ring-1 ring-black/5 backdrop-blur-xl backdrop-saturate-150 dark:bg-sheet-dark/90 dark:text-neutral-100 dark:shadow-soft-dark dark:ring-white/10">
+    <button type="button" role="menuitem" data-format="pdf" class="flex w-full cursor-pointer justify-between gap-4 rounded-lg px-2.5 py-1.5 text-left underline-offset-4 enabled:hover:underline disabled:cursor-default disabled:text-neutral-400 dark:disabled:text-neutral-500">PDF<small class="text-xs text-neutral-400 dark:text-neutral-500">印刷の画面から</small></button>
+    <button type="button" role="menuitem" data-format="txt" disabled class="flex w-full cursor-pointer justify-between gap-4 rounded-lg px-2.5 py-1.5 text-left underline-offset-4 enabled:hover:underline disabled:cursor-default disabled:text-neutral-400 dark:disabled:text-neutral-500">テキスト<small class="text-xs text-neutral-400 dark:text-neutral-500">.txt</small></button>
+    <button type="button" role="menuitem" data-format="md" disabled class="flex w-full cursor-pointer justify-between gap-4 rounded-lg px-2.5 py-1.5 text-left underline-offset-4 enabled:hover:underline disabled:cursor-default disabled:text-neutral-400 dark:disabled:text-neutral-500">Markdown<small class="text-xs text-neutral-400 dark:text-neutral-500">.md</small></button>
   </div>
 </header>
-<main>
-  <section class="source">
-    <div class="editor">
-      <pre id="hl" aria-hidden="true"></pre>
-      <textarea id="text" spellcheck="false" autocomplete="off" aria-label="台本" placeholder="ここに台本を貼ります（Google ドキュメントからそのまま貼れます）&#10;&#10;## Track 01 おかえり&#10;(夕方の玄関)&#10;// SE : ドアが開く&#10;おかえりなさい"></textarea>
+<main class="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-6 px-6 pt-2 pb-6 max-md:block max-md:px-4">
+  <section class="-m-1 flex min-h-0 flex-col gap-5 overflow-auto p-1 max-md:overflow-visible">
+    <!-- 台本の欄：見えている字は後ろの色分けの層。textarea は字を透かして、カーソルと選択だけ -->
+    <div class="relative flex-[1_0_22em] rounded-[10px] bg-white shadow-soft max-md:h-[50vh] max-md:flex-none dark:bg-sheet-dark dark:shadow-soft-dark">
+      <pre id="hl" aria-hidden="true" class="editor-text pointer-events-none absolute inset-0 overflow-hidden"></pre>
+      <textarea id="text" spellcheck="false" autocomplete="off" aria-label="台本" class="editor-text relative block size-full resize-none overflow-auto bg-transparent text-transparent caret-neutral-900 outline-none placeholder:text-neutral-400 selection:bg-neutral-500/25 dark:caret-neutral-100 dark:placeholder:text-neutral-500" placeholder="ここに台本を貼ります（Google ドキュメントからそのまま貼れます）&#10;&#10;## Track 01 おかえり&#10;(夕方の玄関)&#10;// SE : ドアが開く&#10;おかえりなさい"></textarea>
     </div>
 
-    <div class="counts">
-      <p class="status" id="status" aria-live="polite"></p>
-      <ol class="tracks" id="tracks" aria-label="トラックごとの文字数"></ol>
+    <div class="text-[13px]">
+      <p id="status" aria-live="polite"></p>
+      <ol id="tracks" aria-label="トラックごとの文字数" class="mt-2"></ol>
     </div>
 
-    <div>
+    <div class="space-y-1 text-[13px] [&_summary]:cursor-pointer [&_summary]:py-0.5 [&_summary]:text-neutral-500 [&_summary:hover]:text-neutral-900 dark:[&_summary]:text-neutral-400 dark:[&_summary:hover]:text-neutral-100">
       <details>
         <summary>行の頭の記号</summary>
-        <div class="marks">
-          <label>SE <input type="text" id="f-se" autocomplete="off" spellcheck="false"></label>
-          <label>コメント・演技指示 <input type="text" id="f-shiji" autocomplete="off" spellcheck="false"></label>
-          <label>その他（セリフにしない） <input type="text" id="f-other" autocomplete="off" spellcheck="false"></label>
-          <label class="check"><input type="checkbox" id="f-other-out">その他も PDF に出す</label>
-          <p class="hint">、で区切って打ちます。どれにも当たらない行がセリフで、文字数はセリフだけを数えます。SE とコメント・演技指示は「ト書きあり」にだけ出ます。行の頭の # と ## は見出し（トラック）です。</p>
-          <p class="hint" id="f-extra"></p>
-          <div class="buttons">
-            <button type="button" id="save">この設定で保存</button>
-            <label class="button">設定を開く<input type="file" id="open" accept=".json,application/json"></label>
+        <div class="mt-2.5 mb-2 grid grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-x-4 gap-y-2">
+          <label class="contents text-neutral-500 dark:text-neutral-400">SE <input type="text" id="f-se" autocomplete="off" spellcheck="false" class="field"></label>
+          <label class="contents text-neutral-500 dark:text-neutral-400">コメント・演技指示 <input type="text" id="f-shiji" autocomplete="off" spellcheck="false" class="field"></label>
+          <label class="contents text-neutral-500 dark:text-neutral-400">その他（セリフにしない） <input type="text" id="f-other" autocomplete="off" spellcheck="false" class="field"></label>
+          <label class="col-span-full inline-flex items-center gap-1.5"><input type="checkbox" id="f-other-out">その他も PDF に出す</label>
+          <p class="hint col-span-full">、で区切って打ちます。どれにも当たらない行がセリフで、文字数はセリフだけを数えます。SE とコメント・演技指示は「ト書きあり」にだけ出ます。行の頭の # と ## は見出し（トラック）です。</p>
+          <p class="hint col-span-full" id="f-extra"></p>
+          <div class="col-span-full flex flex-wrap gap-5">
+            <button type="button" id="save" class="link">この設定で保存</button>
+            <label class="link">設定を開く<input type="file" id="open" accept=".json,application/json" class="sr-only"></label>
           </div>
         </div>
       </details>
       <details>
         <summary>ルビの書き方</summary>
-        <div class="ruby">
-          <label class="check"><input type="checkbox" id="r-on">ルビを読む</label>
-          <label>始め<input type="text" id="r-start" autocomplete="off" spellcheck="false"></label>
-          <label>開き<input type="text" id="r-open" autocomplete="off" spellcheck="false"></label>
-          <label>閉じ<input type="text" id="r-close" autocomplete="off" spellcheck="false"></label>
-          <label class="check"><input type="checkbox" id="r-pixiv">[[rb:漢字 &gt; かんじ]] も読む</label>
+        <div class="mt-2.5 mb-2 flex flex-wrap items-baseline gap-x-4 gap-y-2 [&_label:not(:has([type=checkbox]))]:text-neutral-500 dark:[&_label:not(:has([type=checkbox]))]:text-neutral-400">
+          <label class="inline-flex items-center gap-1.5"><input type="checkbox" id="r-on">ルビを読む</label>
+          <label>始め<input type="text" id="r-start" autocomplete="off" spellcheck="false" class="field ml-1.5 w-12"></label>
+          <label>開き<input type="text" id="r-open" autocomplete="off" spellcheck="false" class="field ml-1.5 w-12"></label>
+          <label>閉じ<input type="text" id="r-close" autocomplete="off" spellcheck="false" class="field ml-1.5 w-12"></label>
+          <label class="inline-flex items-center gap-1.5"><input type="checkbox" id="r-pixiv">[[rb:漢字 &gt; かんじ]] も読む</label>
         </div>
-        <p class="hint">例：|漢字《かんじ》。始めの記号が無いときは、開きの前に続く漢字に付けます。ルビの字は文字数に入れません。</p>
+        <p class="hint mb-2">例：|漢字《かんじ》。始めの記号が無いときは、開きの前に続く漢字に付けます。ルビの字は文字数に入れません。</p>
       </details>
       <details>
         <summary>設定（4iii.json と同じ形）</summary>
-        <textarea id="config" spellcheck="false" autocomplete="off">{}</textarea>
-        <p class="hint" id="config-error"></p>
+        <textarea id="config" spellcheck="false" autocomplete="off" class="mt-2.5 h-48 w-full rounded-lg border border-neutral-200 bg-transparent px-2.5 py-2 font-mono text-xs dark:border-neutral-700">{}</textarea>
+        <p class="hint mb-2" id="config-error"></p>
       </details>
       <details>
         <summary>塊（{名前} の中身）を読む</summary>
-        <input type="file" id="parts" accept=".txt,text/plain" multiple>
-        <p class="hint" id="parts-list">parts/ の .txt を選びます（ファイル名が塊の名前）</p>
+        <input type="file" id="parts" accept=".txt,text/plain" multiple class="mt-2.5 text-xs text-neutral-500 dark:text-neutral-400">
+        <p class="hint mb-2" id="parts-list">parts/ の .txt を選びます（ファイル名が塊の名前）</p>
       </details>
     </div>
 
-    <div class="notes">
+    <div class="flex flex-col gap-1 pb-2">
       <p class="hint">貼った台本はどこにも送らず、保存もしません（閉じると消えます）。「この設定で保存」は、記号などの設定だけをこの PC に 4iii.json で落とします。</p>
       <p class="hint">Export の PDF で印刷の画面が開くので、「PDF に保存」を選びます。用紙の向き・大きさは設定の export.pdf.size（書いていなければ、縦書きは A4 横・横書きは A4 縦）です。</p>
     </div>
   </section>
-  <section class="preview">
-    <iframe id="preview" title="縦書きのプレビュー"></iframe>
+  <section class="flex min-h-0 max-md:mt-6 max-md:h-[70vh]">
+    <iframe id="preview" title="縦書きのプレビュー" class="flex-1 rounded-[10px] border-0 bg-white shadow-soft dark:shadow-soft-dark"></iframe>
   </section>
 </main>
 <script type="module" src="./app.js"></script>

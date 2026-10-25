@@ -1,0 +1,70 @@
+/* ページの見た目の元。npm run css で web/style.css を作る（プレビューの中の台本の見た目は src/export.js が持つ） */
+@import "tailwindcss" source(none);
+@source "../web/index.html";
+@source "../web/app.js";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --color-paper: #fcfcfc;
+  --color-night: #161514;
+  --color-sheet-dark: #1f1e1c;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / .05), 0 6px 24px rgb(0 0 0 / .07);
+  --shadow-soft-dark: 0 1px 2px rgb(0 0 0 / .4), 0 6px 24px rgb(0 0 0 / .45);
+}
+
+@layer base {
+  html { color-scheme: light dark; }
+}
+
+/* 台本の欄：後ろの色分けの層（pre）と textarea を、1文字もずれないように同じ字・同じ折り返しにする */
+@utility editor-text {
+  margin: 0;
+  border: 0;
+  padding: 16px 18px;
+  font: 15px/1.9 var(--font-sans);
+  letter-spacing: 0;
+  font-feature-settings: normal;
+  tab-size: 4;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  scrollbar-gutter: stable;
+}
+
+/* 1行の入力欄：下の線だけ */
+@utility field {
+  border: 0;
+  border-bottom: 1px solid var(--color-neutral-200);
+  border-radius: 0;
+  background: transparent;
+  padding: 2px 0;
+  color: var(--color-neutral-900);
+  &:focus { outline: none; border-bottom-color: var(--color-neutral-900); }
+  &:disabled { color: var(--color-neutral-400); }
+  @variant dark {
+    border-bottom-color: var(--color-neutral-700);
+    color: var(--color-neutral-100);
+    &:focus { border-bottom-color: var(--color-neutral-100); }
+    &:disabled { color: var(--color-neutral-500); }
+  }
+}
+
+/* 文の中のリンク・リンクの形のボタン */
+@utility link {
+  text-decoration-line: underline;
+  text-decoration-color: var(--color-neutral-300);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  &:hover, &:has(input:focus-visible) { text-decoration-color: currentColor; }
+  @variant dark { text-decoration-color: var(--color-neutral-600); &:hover { text-decoration-color: currentColor; } }
+}
+
+/* 小さい説明の文 */
+@utility hint {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.7;
+  color: var(--color-neutral-400);
+  &:empty { display: none; }
+  @variant dark { color: var(--color-neutral-500); }
+}

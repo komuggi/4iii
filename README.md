@@ -28,6 +28,15 @@ python3 -m http.server   # このフォルダで打つ
 - ブラウザの保存（localStorage・cookie など）も使いません
 - 作った人が台本を見ることも、AI の学習に使うこともできません（届かないので）
 
+### 見た目を直す
+
+ページの見た目は Tailwind で作ります。`web/index.html`・`web/app.js` の class か `styles/app.css` を直したら、作り直します（作った `web/style.css` もコミットする）。
+
+```sh
+npm install   # はじめの1回
+npm run css
+```
+
 ## CLI
 
 ```sh

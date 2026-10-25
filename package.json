@@ -5,8 +5,19 @@
   "type": "module",
   "private": true,
   "license": "MIT",
-  "bin": { "4iii": "bin/4iii.js" },
+  "bin": {
+    "4iii": "bin/4iii.js"
+  },
   "exports": "./src/index.js",
-  "scripts": { "test": "node --test" },
-  "engines": { "node": ">=20" }
+  "scripts": {
+    "test": "node --test",
+    "css": "tailwindcss -i styles/app.css -o web/style.css --minify",
+    "css:watch": "tailwindcss -i styles/app.css -o web/style.css --watch"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.3"
+  }
 }
