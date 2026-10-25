@@ -8,21 +8,24 @@ const KANJI = "[\\p{Script=Han}々〆〇ヶ]";
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const asList = (x) => (x === undefined || x === null ? [] : Array.isArray(x) ? x : [x]);
 const isText = (s) => typeof s === "string" && s !== "";
+// ルビを付ける字・読みの長さの上限。上限が無いと、閉じの無い長い行で探し直しが行の長さの2乗になり、ページが固まる
+const BASE_MAX = 20;
+const READING_MAX = 40;
 
 /** 設定から、ルビを探す正規表現を作る。ルビを読まないなら undefined */
 function pattern(ruby) {
   if (!ruby || typeof ruby !== "object") return undefined;
   const alts = [];
-  if (ruby.pixiv) alts.push("\\[\\[rb:\\s*([^>\\]]+?)\\s*>\\s*([^\\]]+?)\\s*\\]\\]");
+  if (ruby.pixiv) alts.push(`\\[\\[rb:\\s*([^>\\]]{1,${BASE_MAX}}?)\\s*>\\s*([^\\]]{1,${READING_MAX}}?)\\s*\\]\\]`);
   if (isText(ruby.open) && isText(ruby.close)) {
     const o = escapeRe(ruby.open);
     const c = escapeRe(ruby.close);
     const starts = asList(ruby.start).filter(isText).map(escapeRe);
     if (starts.length > 0) {
       const stop = [o, ...starts].join("|");
-      alts.push(`(?:${starts.join("|")})((?:(?!${stop}).)+?)${o}((?:(?!${c}).)+?)${c}`);
+      alts.push(`(?:${starts.join("|")})((?:(?!${stop}).){1,${BASE_MAX}}?)${o}((?:(?!${c}).){1,${READING_MAX}}?)${c}`);
     }
-    alts.push(`(${KANJI}+)${o}((?:(?!${c}).)+?)${c}`);
+    alts.push(`(${KANJI}{1,${BASE_MAX}})${o}((?:(?!${c}).){1,${READING_MAX}}?)${c}`);
   }
   return alts.length > 0 ? new RegExp(alts.join("|"), "gu") : undefined;
 }

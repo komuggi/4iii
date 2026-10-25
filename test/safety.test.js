@@ -18,3 +18,14 @@ test("設定の CSS の値・種類の名前・class から HTML に抜け出せ
   assert.doesNotMatch(outside, /<img|<script|onmouseover="/i);
   assert.match(html, /class="a__onmouseover__alert_1_"/);
 });
+
+test("ルビ：閉じの無い長い行でも固まらない（字と読みの長さに上限）", async () => {
+  const { split } = await import("../src/ruby.js");
+  const { defaults } = await import("../src/config.js");
+  const line = "|" + "あ".repeat(20000) + "《" + "い".repeat(20000);
+  const t = Date.now();
+  split(line, defaults.ruby);
+  assert.ok(Date.now() - t < 1000, `${Date.now() - t}ms かかった`);
+  // ふつうのルビは今までどおり
+  assert.deepEqual(split("|お姉様《ねえさま》の声", defaults.ruby), [{ base: "お姉様", reading: "ねえさま" }, { text: "の声" }]);
+});
