@@ -31,7 +31,7 @@ export function classOf(r) {
  * opts = { togaki: true（ト書きも出す）, getPart, summary（count.summary の結果）, vertical（縦書きか） }
  * 返す値：{ items, missing }。items の1つは次のどれか
  *   { kind: "heading", level, text, new_page }
- *   { kind: "line", class, text, speaker, togaki }
+ *   { kind: "line", class, text, lead（セリフの前のかっこ・ト書きありだけ）, speaker, togaki }
  *   { kind: "gap" }（空行の空き）
  *   { kind: "count_list", rows: [文字, ...], total: 文字 }（{@文字数一覧}）
  */
@@ -51,8 +51,8 @@ export function items(records, cfg, opts) {
     pendingGap = false;
   };
 
-  const line = (r, text) =>
-    push({ kind: "line", class: classOf(r), text, speaker: r.speaker, togaki: r.kind !== "セリフ" });
+  const line = (r, text, lead) =>
+    push({ kind: "line", class: classOf(r), text, lead, speaker: r.speaker, togaki: r.kind !== "セリフ" });
 
   const partInline = (name) => {
     const lines = getPart(name);
@@ -105,14 +105,21 @@ export function items(records, cfg, opts) {
         }
       } else {
         // 塊を読まないとき（blocks = false）は、行の中の { } もそのまま字として出す
-        let text = trim(r.text).replace(/\{([^{}]+)\}/g, (m, name) => (cfg.blocks === false ? m : partInline(trim(name))));
+        const whole = trim(r.text);
+        // split_lead の行：かっこ（lead）とセリフに分け、かっこはト書きありの時だけ出す
+        let lead = r.lead;
+        let text = (lead ? trim(whole.slice(lead.length)) : whole).replace(/\{([^{}]+)\}/g, (m, name) => (cfg.blocks === false ? m : partInline(trim(name))));
         const marks = opts.vertical && pdf.vertical_marks;
         if (r.range && marks && marks[r.range.op]) {
           // 縦書きでは ▼▲ を読む向きに合う記号にする
-          const i = text.indexOf(r.range.mark);
-          if (i >= 0) text = text.slice(0, i) + marks[r.range.op] + text.slice(i + r.range.mark.length);
+          const swap = (s) => {
+            const i = s.indexOf(r.range.mark);
+            return i >= 0 ? s.slice(0, i) + marks[r.range.op] + s.slice(i + r.range.mark.length) : s;
+          };
+          if (lead) lead = swap(lead);
+          else text = swap(text);
         }
-        line(r, text);
+        line(r, text, lead && opts.togaki ? lead : undefined);
       }
     }
   };
@@ -161,6 +168,7 @@ export function build(records, cfg, opts) {
         const name = textHtml(it.speaker);
         if (html.startsWith(name)) html = `<span class="speaker">${name}</span>` + html.slice(name.length);
       }
+      if (it.lead !== undefined) html = `<span class="lead">${textHtml(it.lead)}</span>` + html;
       body.push(`<p class="${it.class}">${html}</p>`);
     }
   }
@@ -173,6 +181,8 @@ export function build(records, cfg, opts) {
     `<title>${escapeHtml(opts.title ?? "台本")}</title>`,
     "<style>",
     css(pdf),
+    // split_lead のかっこがある時だけ（無ければ daihon と同じ CSS のまま）
+    ...(list.some((it) => it.lead !== undefined) ? [LEAD_CSS] : []),
     safeCss(opts.css),
     "</style>",
     "</head>",
@@ -185,6 +195,7 @@ export function build(records, cfg, opts) {
   return { html, missing };
 }
 
+const LEAD_CSS = ".lead { font-size: 0.9em; color: #555; margin-inline-end: 0.5em; }";
 const or = (v, fallback) => (v === undefined || v === null || v === false ? fallback : v);
 // 設定から <style> に入れる値：CSS や HTML を抜け出せる記号（< > { } ;）は外す
 const cssValue = (v, fallback) => String(or(v, fallback)).replace(/[<>{};]/g, "");

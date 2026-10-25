@@ -55,6 +55,9 @@ export const defaults = {
   // 塊（{名前}・{{ }}）を読むか（4iii だけ）。ブラウザのページは false：貼った台本の { } はそのまま字として出す。{@文字数一覧} はどちらでも読む
   blocks: true,
 
+  // 「(▼前・近) おぼっちゃま」のように、かっこで始まる行のかっこの後ろに字が続くとき、かっこはト書き・後ろはセリフにする（4iii だけ・ブラウザのページは true）
+  split_lead: false,
+
   show_count: "winbar",
 
   keys: {

@@ -14,6 +14,9 @@ const listOf = (x) => (Array.isArray(x) ? x : []); // Lua の ipairs と同じ�
 /** 前後の空白（全角スペースを含む）を取る */
 export const trim = (s) => s.replace(TRIM, "");
 
+// split_lead で、かっこの閉じを探す開きの記号
+const CLOSERS = { "(": ")", "（": "）", "【": "】", "[": "]", "［": "］" };
+
 function matchPrefix(s, prefixes) {
   for (const p of asList(prefixes)) {
     if (p !== "" && s.startsWith(p)) return p;
@@ -87,6 +90,7 @@ export function parse(lines, cfg) {
   lines.forEach((line, idx) => {
     const r = { lnum: idx + 1, text: line };
     const t = trim(line);
+    let serifu; // split_lead：かっこの後ろのセリフ
     const lead = t === "" ? 0 : byteLength(line.slice(0, line.indexOf(t)));
 
     if (t === "") {
@@ -126,6 +130,21 @@ export function parse(lines, cfg) {
         for (const lt of listOf(cfg.line_types)) {
           const p = matchPrefix(t, lt.prefix);
           if (p !== undefined) {
+            const closer = cfg.split_lead ? CLOSERS[p] : undefined;
+            const at = closer ? t.indexOf(closer, p.length) : -1;
+            const rest = at >= 0 ? trim(t.slice(at + closer.length)) : "";
+            if (rest !== "") {
+              // かっこの後ろに字が続く：かっこ（lead）はト書き、後ろはセリフ（下のセリフの所で読む）
+              r.lead = t.slice(0, at + closer.length);
+              r.lead_type = lt;
+              serifu = rest;
+              if (rangeTypes.has(lt.name)) {
+                // かっこだけの行（「(▲前・近)」）と同じく、開きの記号の後ろから読む（印の名前をそろえる）
+                const rg = findRange(trim(r.lead.slice(p.length)), ranges);
+                if (rg) r.range = { ...rg, col: byteLength(line.slice(0, line.indexOf(rg.mark, line.indexOf(t)))) };
+              }
+              break;
+            }
             r.kind = lt.name;
             r.type = lt;
             r.output = lt.output !== false;
@@ -145,8 +164,8 @@ export function parse(lines, cfg) {
       if (!r.kind) {
         r.kind = "セリフ";
         r.output = true;
-        r.body = t;
-        if (cfg.mode === "multi") {
+        r.body = serifu ?? t;
+        if (cfg.mode === "multi" && serifu === undefined) {
           const sp = splitSpeaker(t, cfg.multi && cfg.multi.style);
           if (sp) {
             r.speaker = sp.name;

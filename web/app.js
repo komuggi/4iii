@@ -38,7 +38,8 @@ function useProject(next, showJson) {
   try {
     configLib.stripGlobalOnly(next);
     // ページは塊を読まない（貼った台本の { } は字のまま）・最初のトラックより前（仕様書など）は数えない
-    cfg = makeConfig({ ...next, blocks: false, count: { ...(next.count ?? {}), skip_before_heading: true } });
+    // かっこの後ろに字が続く行（「(▼前・近) おぼっちゃま」）は、かっこがト書き・後ろがセリフ
+    cfg = makeConfig({ ...next, blocks: false, split_lead: true, count: { ...(next.count ?? {}), skip_before_heading: true } });
     project = next;
     error.textContent = "";
   } catch (err) {
@@ -108,7 +109,16 @@ function paint() {
   const frag = document.createDocumentFragment();
   raw.forEach((text, i) => {
     if (i > 0) frag.append("\n");
-    const cls = kindClass(records[i]);
+    const r = records[i];
+    if (r && r.lead) {
+      // かっこ（ト書き）だけ灰色、後ろのセリフはそのまま
+      const end = text.indexOf(r.lead) + r.lead.length;
+      const span = document.createElement("span");
+      span.className = KIND_CLASS.togaki;
+      span.textContent = text.slice(0, end);
+      return frag.append(span, text.slice(end));
+    }
+    const cls = kindClass(r);
     if (!cls) return frag.append(text);
     const span = document.createElement("span");
     span.className = cls;

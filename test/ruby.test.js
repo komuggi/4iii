@@ -1,7 +1,7 @@
 // ルビと、ページの枠（daihon には無い・js 版だけ）
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeConfig, render, fields } from "../src/index.js";
+import { makeConfig, render, fields, parser } from "../src/index.js";
 import { split, plain } from "../src/ruby.js";
 import { defaults } from "../src/config.js";
 
@@ -134,4 +134,28 @@ test("最初のトラックの見出しより前は数えない（skip_before_he
   assert.equal(render(text, on, {}).summary.total, 5);
   assert.equal(render(text, makeConfig({}), {}).summary.total, 10); // 既定（daihon と同じ）は全部数える
   assert.equal(render("仕様書の文\nこんにちは\n", on, {}).summary.total, 10);
+});
+
+test("かっこの後ろに字が続く行：かっこはト書き（ト書きありだけ）・後ろはセリフで数える（split_lead）", () => {
+  const cfg = makeConfig({ ...fields.START, split_lead: true });
+  const text = "(▼前・近) おぼっちゃま、おぼっちゃま\n(ため息)\nおはよう\n(▲前・近)\n";
+  const res = render(text, cfg, { name: "台本" });
+  const r0 = res.records[0];
+  assert.equal(r0.kind, "セリフ");
+  assert.equal(r0.lead, "(▼前・近)");
+  assert.equal(r0.body, "おぼっちゃま、おぼっちゃま");
+  assert.equal(res.records[1].kind, "指示"); // かっこだけの行は今までどおりト書き
+  assert.equal(res.summary.total, "おぼっちゃま、おぼっちゃま".length + "おはよう".length);
+  const withT = res.outputs.find((o) => o.togaki).html;
+  const withoutT = res.outputs.find((o) => !o.togaki).html;
+  assert.match(withT, /<span class="lead">[^<]*前・近\)<\/span>おぼっちゃま、おぼっちゃま/);
+  assert.match(withoutT, /<p class="serifu">おぼっちゃま、おぼっちゃま<\/p>/);
+  assert.doesNotMatch(withoutT, /前・近/);
+  assert.deepEqual(parser.checkRanges(res.records, cfg), []); // ▼ と ▲ が対になっている
+});
+
+test("split_lead が無い（daihon と同じ）ときは、かっこで始まる行は丸ごとト書き", () => {
+  const res = render("(▼前・近) おぼっちゃま\n", makeConfig(fields.START), {});
+  assert.equal(res.records[0].kind, "指示");
+  assert.equal(res.summary.total, 0);
 });
