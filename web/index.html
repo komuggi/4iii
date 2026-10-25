@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- 外への通信を全部止める（台本をどこにも送らない）。読めるのはこのページと同じ所のスクリプトと CSS だけ（プレビューの中の台本の CSS は inline） -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src data:; frame-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src data:; frame-src 'none'; base-uri 'none'; form-action 'none'">
 <title>4iii｜台本を縦書きの PDF に</title>
 <meta name="description" content="音声作品（ボイスドラマ・ASMR）の台本を、ブラウザで縦書きの PDF にします。Google ドキュメントから貼るだけ。セリフとト書きを分け、トラックごとの文字数も数えます。台本はどこにも送りません。">
 <link rel="icon" href="data:,">
@@ -85,7 +85,7 @@
     </div>
   </section>
   <section class="flex min-h-0 max-md:mt-6 max-md:h-[70vh]">
-    <iframe id="preview" title="縦書きのプレビュー" class="flex-1 rounded-[10px] border-0 bg-white shadow-soft dark:shadow-soft-dark"></iframe>
+    <iframe id="preview" title="縦書きのプレビュー" sandbox="allow-same-origin allow-modals" class="flex-1 rounded-[10px] border-0 bg-white shadow-soft dark:shadow-soft-dark"></iframe>
   </section>
 </main>
 <script type="module" src="./app.js"></script>

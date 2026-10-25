@@ -20,10 +20,10 @@ function headingText(r, n) {
   return r.title;
 }
 
-/** 書き出す行のクラス名（CSS で見た目を変えるときに使う） */
+/** 書き出す行のクラス名（CSS で見た目を変えるときに使う）。設定から来る名前は、字・数字・_・- のほかを _ にする（HTML に入るので） */
 export function classOf(r) {
   if (r.kind === "セリフ") return "serifu";
-  return (r.type && r.type.class) || `t-${r.kind}`;
+  return String((r.type && r.type.class) || `t-${r.kind}`).replace(/[^\p{L}\p{N}_-]/gu, "_");
 }
 
 /**
@@ -173,7 +173,7 @@ export function build(records, cfg, opts) {
     `<title>${escapeHtml(opts.title ?? "台本")}</title>`,
     "<style>",
     css(pdf),
-    opts.css ?? "",
+    safeCss(opts.css),
     "</style>",
     "</head>",
     "<body>",
@@ -186,6 +186,10 @@ export function build(records, cfg, opts) {
 }
 
 const or = (v, fallback) => (v === undefined || v === null || v === false ? fallback : v);
+// 設定から <style> に入れる値：CSS や HTML を抜け出せる記号（< > { } ;）は外す
+const cssValue = (v, fallback) => String(or(v, fallback)).replace(/[<>{};]/g, "");
+// 自分の CSS（export.pdf.css）：</style> で抜け出せないようにする
+export const safeCss = (s) => String(s ?? "").replace(/<\/(style)/gi, "<\\/$1");
 
 /** 既定の見た目。export.pdf の値から作る。細かい所は export.pdf.css の自分の CSS で上書きする */
 export function css(pdf) {
@@ -195,12 +199,12 @@ export function css(pdf) {
       ? "@bottom-center { content: counter(page); font-size: 9pt; writing-mode: horizontal-tb; }"
       : "";
   return [
-    `@page { size: ${or(pdf.size, "A4 landscape")}; margin: ${or(pdf.margin, "20mm")}; ${pageNumber} }`,
+    `@page { size: ${cssValue(pdf.size, "A4 landscape")}; margin: ${cssValue(pdf.margin, "20mm")}; ${pageNumber} }`,
     "html {",
     vertical ? "  writing-mode: vertical-rl;" : "",
-    `  font-family: ${or(pdf.font, "serif")};`,
-    `  font-size: ${or(pdf.font_size, "11pt")};`,
-    `  line-height: ${or(pdf.line_height, 1.8)};`,
+    `  font-family: ${cssValue(pdf.font, "serif")};`,
+    `  font-size: ${cssValue(pdf.font_size, "11pt")};`,
+    `  line-height: ${cssValue(pdf.line_height, 1.8)};`,
     "}",
     "body { margin: 0; }",
     "p { margin: 0; }",
@@ -211,7 +215,7 @@ export function css(pdf) {
     ".new-page + .new-page, body > .new-page:first-child { break-before: auto; }",
     ".gap { block-size: 0; margin-block-end: 1em; }",
     // ト書きは行の頭、セリフは1段下げる
-    `.serifu { padding-inline-start: ${or(pdf.serifu_indent, "3em")}; }`,
+    `.serifu { padding-inline-start: ${cssValue(pdf.serifu_indent, "3em")}; }`,
     ".t-指示 { font-size: 0.9em; color: #555; }",
     ".speaker { font-weight: bold; }",
     ".tcy { text-combine-upright: all; }",
