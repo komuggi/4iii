@@ -9,6 +9,8 @@ const configBox = $("config");
 const nameBox = $("name");
 const frame = $("preview");
 const status = $("status");
+const hl = $("hl");
+const tracks = $("tracks");
 const parts = new Map(); // 名前 → 行の配列
 
 // 画面で見るときだけの見た目（印刷には効かない）
@@ -82,6 +84,69 @@ function fromFields() {
   if (useProject(next, true)) schedule();
 }
 
+/** 行の種類 → 台本の欄の色（字の太さは変えない。変えるとカーソルの位置がずれる） */
+function kindClass(r) {
+  if (!r || r.kind === "セリフ" || r.kind === "空行") return "";
+  if (r.kind === "見出し") return "k-head";
+  return r.output === false ? "k-off" : "k-togaki";
+}
+
+/** 台本の欄の後ろの層に、色を分けた同じ文を書く（textarea の字は透明） */
+function paint() {
+  const raw = textBox.value.split("\n");
+  const records = parser.parse(splitLines(textBox.value), cfg);
+  const frag = document.createDocumentFragment();
+  raw.forEach((text, i) => {
+    if (i > 0) frag.append("\n");
+    const cls = kindClass(records[i]);
+    if (!cls) return frag.append(text);
+    const span = document.createElement("span");
+    span.className = cls;
+    span.textContent = text;
+    frag.append(span);
+  });
+  frag.append("\u200b"); // 最後が改行のとき、その次の行にも高さを持たせる
+  hl.replaceChildren(frag);
+  hl.scrollTop = textBox.scrollTop;
+}
+
+/** 全体の文字数と、見出し（トラック）ごとの文字数 */
+function showCounts(res, togaki) {
+  const total = document.createElement("span");
+  total.className = "total";
+  total.textContent = `全体 ${res.summary.total.toLocaleString()}文字`;
+  status.replaceChildren(total);
+  if (!togaki && !cfg.export.pdf.both) status.append("（設定の export.pdf.both が false なので、ト書きありだけ）");
+  const warns = [];
+  if (res.missing.length > 0) warns.push(`未登録の塊：${res.missing.join("、")}`);
+  for (const issue of parser.checkRanges(res.records, cfg)) warns.push(`${issue.lnum}行目 ${issue.msg}`);
+  for (const w of warns.slice(0, 5)) {
+    const span = document.createElement("span");
+    span.className = "warn";
+    span.textContent = ` ／ ${w}`;
+    status.append(span);
+  }
+  if (warns.length > 5) status.append(` ほか ${warns.length - 5}件`);
+
+  const heads = res.records.filter((r) => r.kind === "見出し");
+  const top = Math.min(...heads.map((r) => r.level));
+  tracks.replaceChildren(...heads.map((r) => {
+    const li = document.createElement("li");
+    if (r.level > top) li.className = "sub";
+    const title = document.createElement("span");
+    title.textContent = r.title;
+    li.append(title);
+    const n = res.summary.headings[r.lnum];
+    if (n !== undefined) {
+      const num = document.createElement("span");
+      num.className = "n";
+      num.textContent = n.toLocaleString();
+      li.append(num);
+    }
+    return li;
+  }));
+}
+
 function update() {
   const togaki = document.querySelector('input[name="togaki"]:checked').value === "1";
   const lines = splitLines(textBox.value);
@@ -93,21 +158,9 @@ function update() {
   const scroll = win ? [win.scrollX, win.scrollY] : [0, 0];
   frame.onload = () => frame.contentWindow.scrollTo(...scroll);
   frame.srcdoc = html;
-  document.title = `${out.name} - 縦書き台本`;
-
-  const notes = [`全体 ${res.summary.total.toLocaleString()}文字`];
-  if (!togaki && !cfg.export.pdf.both) notes.push("（設定の export.pdf.both が false なので、ト書きありだけ）");
-  const warns = [];
-  if (res.missing.length > 0) warns.push(`未登録の塊：${res.missing.join("、")}`);
-  for (const issue of parser.checkRanges(res.records, cfg)) warns.push(`${issue.lnum}行目 ${issue.msg}`);
-  status.replaceChildren(notes.join(" "));
-  for (const w of warns.slice(0, 5)) {
-    const span = document.createElement("span");
-    span.className = "warn";
-    span.textContent = ` ／ ${w}`;
-    status.append(span);
-  }
-  if (warns.length > 5) status.append(` ほか ${warns.length - 5}件`);
+  document.title = `${out.name} - 4iii`;
+  paint();
+  showCounts(res, togaki);
 }
 
 let timer;
@@ -126,10 +179,17 @@ textBox.addEventListener("paste", (ev) => {
   const before = textBox.value.slice(lineStart, start);
   const fixed = hankaku.normalizePaste(pasted, cfg, before);
   textBox.setRangeText(fixed, start, textBox.selectionEnd, "end");
+  paint();
   schedule();
 });
 
-textBox.addEventListener("input", schedule);
+textBox.addEventListener("input", () => {
+  paint(); // 字は後ろの層にしか見えないので、打つたびにすぐ書く
+  schedule();
+});
+textBox.addEventListener("scroll", () => {
+  hl.scrollTop = textBox.scrollTop;
+});
 nameBox.addEventListener("input", schedule);
 configBox.addEventListener("input", () => {
   let next;
@@ -181,7 +241,21 @@ function printPreview() {
   win.focus();
   win.print();
 }
-$("print").addEventListener("click", printPreview);
+// Export：今は PDF だけ（テキスト・Markdown は選べないようにしてある）
+const exportButton = $("export");
+const exportMenu = $("export-menu");
+exportMenu.addEventListener("beforetoggle", (ev) => {
+  if (ev.newState !== "open") return;
+  const r = exportButton.getBoundingClientRect();
+  exportMenu.style.top = `${r.bottom + 8}px`;
+  exportMenu.style.right = `${Math.max(8, innerWidth - r.right)}px`;
+});
+exportMenu.addEventListener("click", (ev) => {
+  const item = ev.target.closest("button[data-format]");
+  if (!item || item.disabled) return;
+  exportMenu.hidePopover();
+  if (item.dataset.format === "pdf") printPreview();
+});
 // ⌘P / Ctrl+P でも、ページではなくプレビューを印刷する
 window.addEventListener("keydown", (ev) => {
   if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === "p") {
