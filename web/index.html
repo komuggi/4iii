@@ -31,6 +31,22 @@
 </header>
 <main class="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-6 px-6 pt-2 pb-6 max-md:block max-md:px-4">
   <section class="-m-1 flex min-h-0 flex-col gap-5 overflow-auto p-1 max-md:overflow-visible">
+    <div class="text-[13px]">
+      <h2 class="mb-2 font-medium text-neutral-700 dark:text-neutral-200">行の頭の記号<span class="ml-1 font-normal text-neutral-400 dark:text-neutral-500">（、で区切る）</span></h2>
+      <div class="grid grid-cols-[max-content_minmax(0,1fr)] items-center gap-x-3 gap-y-2">
+        <label class="contents text-neutral-600 dark:text-neutral-300">SE <input type="text" id="f-se" autocomplete="off" spellcheck="false" class="field"></label>
+        <label class="contents text-neutral-600 dark:text-neutral-300">コメント・演技指示 <input type="text" id="f-shiji" autocomplete="off" spellcheck="false" class="field"></label>
+        <label class="contents text-neutral-600 dark:text-neutral-300">その他（セリフにしない） <input type="text" id="f-other" autocomplete="off" spellcheck="false" class="field"></label>
+        <label class="col-span-full inline-flex items-center gap-1.5"><input type="checkbox" id="f-other-out">その他も PDF に出す</label>
+        <p class="hint col-span-full">行の頭がこの記号で始まる行を、その種類にします。どれにも当たらない行がセリフで、文字数はセリフだけを数えます。SE とコメント・演技指示は「ト書きあり」にだけ出ます。行の頭の # と ## は見出し（トラック）です。</p>
+        <p class="hint col-span-full" id="f-extra"></p>
+        <div class="col-span-full flex flex-wrap gap-2">
+          <button type="button" id="save" class="btn">この設定で保存</button>
+          <label class="btn">設定を開く<input type="file" id="open" accept=".json,application/json" class="sr-only"></label>
+        </div>
+      </div>
+    </div>
+
     <!-- 台本の欄：見えている字は後ろの色分けの層。textarea は字を透かして、カーソルと選択だけ -->
     <div class="relative flex-[1_0_22em] rounded-[10px] bg-white shadow-soft max-md:h-[50vh] max-md:flex-none dark:bg-sheet-dark dark:shadow-soft-dark">
       <pre id="hl" aria-hidden="true" class="editor-text pointer-events-none absolute inset-0 overflow-hidden"></pre>
@@ -43,21 +59,6 @@
     </div>
 
     <div class="space-y-1 text-[13px] [&_summary]:cursor-pointer [&_summary]:py-0.5 [&_summary]:text-neutral-500 [&_summary:hover]:text-neutral-900 dark:[&_summary]:text-neutral-400 dark:[&_summary:hover]:text-neutral-100">
-      <details>
-        <summary>行の頭の記号</summary>
-        <div class="mt-2.5 mb-2 grid grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-x-4 gap-y-2">
-          <label class="contents text-neutral-500 dark:text-neutral-400">SE <input type="text" id="f-se" autocomplete="off" spellcheck="false" class="field"></label>
-          <label class="contents text-neutral-500 dark:text-neutral-400">コメント・演技指示 <input type="text" id="f-shiji" autocomplete="off" spellcheck="false" class="field"></label>
-          <label class="contents text-neutral-500 dark:text-neutral-400">その他（セリフにしない） <input type="text" id="f-other" autocomplete="off" spellcheck="false" class="field"></label>
-          <label class="col-span-full inline-flex items-center gap-1.5"><input type="checkbox" id="f-other-out">その他も PDF に出す</label>
-          <p class="hint col-span-full">、で区切って打ちます。どれにも当たらない行がセリフで、文字数はセリフだけを数えます。SE とコメント・演技指示は「ト書きあり」にだけ出ます。行の頭の # と ## は見出し（トラック）です。</p>
-          <p class="hint col-span-full" id="f-extra"></p>
-          <div class="col-span-full flex flex-wrap gap-5">
-            <button type="button" id="save" class="link">この設定で保存</button>
-            <label class="link">設定を開く<input type="file" id="open" accept=".json,application/json" class="sr-only"></label>
-          </div>
-        </div>
-      </details>
       <details>
         <summary>ルビの書き方</summary>
         <div class="mt-2.5 mb-2 flex flex-wrap items-baseline gap-x-4 gap-y-2 [&_label:not(:has([type=checkbox]))]:text-neutral-500 dark:[&_label:not(:has([type=checkbox]))]:text-neutral-400">
@@ -73,11 +74,6 @@
         <summary>設定（4iii.json と同じ形）</summary>
         <textarea id="config" spellcheck="false" autocomplete="off" class="mt-2.5 h-48 w-full rounded-lg border border-neutral-200 bg-transparent px-2.5 py-2 font-mono text-xs dark:border-neutral-700">{}</textarea>
         <p class="hint mb-2" id="config-error"></p>
-      </details>
-      <details>
-        <summary>塊（{名前} の中身）を読む</summary>
-        <input type="file" id="parts" accept=".txt,text/plain" multiple class="mt-2.5 text-xs text-neutral-500 dark:text-neutral-400">
-        <p class="hint mb-2" id="parts-list">parts/ の .txt を選びます（ファイル名が塊の名前）</p>
       </details>
     </div>
 

@@ -1,7 +1,7 @@
 // ブラウザのページ：貼った台本 → 縦書きのプレビュー → 印刷して PDF に
 // 部品（../src/index.js）をそのまま使う。外の CDN は使わない
 // 台本はどこにも送らず、ブラウザにも残さない（外への通信は index.html の CSP で止めている）
-import { makeConfig, render, splitLines, validPartName, parser, hankaku, fields, config as configLib } from "../src/index.js";
+import { makeConfig, render, splitLines, parser, hankaku, fields, config as configLib } from "../src/index.js";
 
 const $ = (id) => document.getElementById(id);
 const textBox = $("text");
@@ -11,7 +11,6 @@ const frame = $("preview");
 const status = $("status");
 const hl = $("hl");
 const tracks = $("tracks");
-const parts = new Map(); // 名前 → 行の配列
 
 // 画面で見るときだけの見た目（印刷には効かない）
 const SCREEN_CSS = "@media screen { html { background: #fff; } body { padding: 24px; } }";
@@ -37,7 +36,7 @@ function useProject(next, showJson) {
   const error = $("config-error");
   try {
     configLib.stripGlobalOnly(next);
-    cfg = makeConfig(next);
+    cfg = makeConfig({ ...next, blocks: false }); // ページは塊を読まない（貼った台本の { } は字のまま）
     project = next;
     error.textContent = "";
   } catch (err) {
@@ -158,7 +157,7 @@ function showCounts(res, togaki) {
 function update() {
   const togaki = document.querySelector('input[name="togaki"]:checked').value === "1";
   const lines = splitLines(textBox.value);
-  const res = render(lines, cfg, { name: nameBox.value.trim() || "台本", getPart: (n) => parts.get(n) });
+  const res = render(lines, cfg, { name: nameBox.value.trim() || "台本" });
   const out = res.outputs.find((o) => o.togaki === togaki) || res.outputs[0];
   const html = out.html.replace("</style>", `${SCREEN_CSS}\n</style>`);
   // スクロールの位置を残して差し替える
@@ -232,15 +231,6 @@ $("open").addEventListener("change", async (ev) => {
     $("config-error").textContent = `設定を読めません（前の設定のまま）：${err.message}`;
     configBox.closest("details").open = true;
   }
-});
-
-$("parts").addEventListener("change", async (ev) => {
-  for (const file of ev.target.files) {
-    const name = file.name.replace(/\.txt$/i, "");
-    if (validPartName(name)) parts.set(name, splitLines(await file.text()));
-  }
-  $("parts-list").textContent = parts.size > 0 ? `読んだ塊：${[...parts.keys()].join("、")}` : "塊はまだありません";
-  update();
 });
 
 function printPreview() {

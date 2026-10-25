@@ -50,6 +50,9 @@ export const defaults = {
 
   parts_dir: "parts",
 
+  // 塊（{名前}・{{ }}）を読むか（4iii だけ）。ブラウザのページは false：貼った台本の { } はそのまま字として出す。{@文字数一覧} はどちらでも読む
+  blocks: true,
+
   show_count: "winbar",
 
   keys: {
@@ -142,6 +145,7 @@ export function validate(cfg) {
       return fail(`line_types の「${lt.name}」に prefix がありません`);
     }
   }
+  if (typeof cfg.blocks !== "boolean") return fail(`blocks は true か false です（今は ${show(cfg.blocks)}）`);
   if (cfg.ruby !== false && !isTable(cfg.ruby)) return fail(`ruby は表か false で書いてください（今は ${show(cfg.ruby)}）`);
   const headings = Array.isArray(cfg.headings) ? cfg.headings : [];
   for (const [i, h] of headings.entries()) {

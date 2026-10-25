@@ -81,6 +81,7 @@ export function parse(lines, cfg) {
   const records = [];
   const ranges = cfg.ranges || {};
   const rangeTypes = new Set(listOf(ranges.in_types));
+  const useBlocks = cfg.blocks !== false;
   let inBlock;
 
   lines.forEach((line, idx) => {
@@ -90,7 +91,7 @@ export function parse(lines, cfg) {
 
     if (t === "") {
       r.kind = "空行";
-    } else if (t.startsWith("{{")) {
+    } else if (useBlocks && t.startsWith("{{")) {
       r.kind = "塊開始";
       r.block_name = trim(t.slice(2));
       inBlock = r.block_name;
@@ -153,7 +154,8 @@ export function parse(lines, cfg) {
           }
         }
       }
-      r.refs = findRefs(line);
+      // 塊を読まないときも、組み込み（@ で始まる {@文字数一覧} など）だけは読む
+      r.refs = useBlocks ? findRefs(line) : findRefs(line).filter((ref) => ref.name.startsWith("@"));
     }
     records.push(r);
   });

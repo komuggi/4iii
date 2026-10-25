@@ -31,32 +31,37 @@
   scrollbar-gutter: stable;
 }
 
-/* 1行の入力欄：下の線だけ */
+/* 1行の入力欄：枠のある箱（何を打つ所か、ひと目で分かるように） */
 @utility field {
-  border: 0;
-  border-bottom: 1px solid var(--color-neutral-200);
-  border-radius: 0;
-  background: transparent;
-  padding: 2px 0;
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 6px;
+  background: #fff;
+  padding: 3px 8px;
   color: var(--color-neutral-900);
-  &:focus { outline: none; border-bottom-color: var(--color-neutral-900); }
-  &:disabled { color: var(--color-neutral-400); }
+  &:focus { outline: none; border-color: var(--color-neutral-900); }
+  &:disabled { color: var(--color-neutral-400); background: transparent; }
   @variant dark {
-    border-bottom-color: var(--color-neutral-700);
+    border-color: var(--color-neutral-700);
+    background: var(--color-sheet-dark);
     color: var(--color-neutral-100);
-    &:focus { border-bottom-color: var(--color-neutral-100); }
-    &:disabled { color: var(--color-neutral-500); }
+    &:focus { border-color: var(--color-neutral-100); }
+    &:disabled { color: var(--color-neutral-500); background: transparent; }
   }
 }
 
-/* 文の中のリンク・リンクの形のボタン */
-@utility link {
-  text-decoration-line: underline;
-  text-decoration-color: var(--color-neutral-300);
-  text-underline-offset: 4px;
+/* 小さいボタン（設定の保存・開く） */
+@utility btn {
+  border: 1px solid var(--color-neutral-300);
+  border-radius: 6px;
+  background: #fff;
+  padding: 3px 10px;
   cursor: pointer;
-  &:hover, &:has(input:focus-visible) { text-decoration-color: currentColor; }
-  @variant dark { text-decoration-color: var(--color-neutral-600); &:hover { text-decoration-color: currentColor; } }
+  &:hover, &:has(input:focus-visible) { border-color: var(--color-neutral-900); }
+  @variant dark {
+    border-color: var(--color-neutral-700);
+    background: var(--color-sheet-dark);
+    &:hover, &:has(input:focus-visible) { border-color: var(--color-neutral-100); }
+  }
 }
 
 /* 小さい説明の文 */

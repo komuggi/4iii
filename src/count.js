@@ -24,8 +24,9 @@ export function format(n) {
 }
 
 const stripRefs = (s) => s.replace(/\{[^{}]+\}/g, "");
-// 数える文：{名前} の字面とルビの読みは数えない
-const countable = (s, cfg) => stripRefs(plain(s, cfg.ruby));
+const stripBuiltins = (s) => s.replace(/\{@[^{}]+\}/g, "");
+// 数える文：{名前} の字面とルビの読みは数えない（塊を読まないときは { } も字として数え、{@文字数一覧} などだけ外す）
+const countable = (s, cfg) => (cfg.blocks === false ? stripBuiltins : stripRefs)(plain(s, cfg.ruby));
 
 /**
  * 数えるための道具をまとめる

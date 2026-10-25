@@ -104,7 +104,8 @@ export function items(records, cfg, opts) {
           line(r, r.text);
         }
       } else {
-        let text = trim(r.text).replace(/\{([^{}]+)\}/g, (_, name) => partInline(trim(name)));
+        // 塊を読まないとき（blocks = false）は、行の中の { } もそのまま字として出す
+        let text = trim(r.text).replace(/\{([^{}]+)\}/g, (m, name) => (cfg.blocks === false ? m : partInline(trim(name))));
         const marks = opts.vertical && pdf.vertical_marks;
         if (r.range && marks && marks[r.range.op]) {
           // 縦書きでは ▼▲ を読む向きに合う記号にする

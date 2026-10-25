@@ -49,17 +49,19 @@ export function brackets(before, ranges) {
  * 貼り付けた文を、daihon で1文字ずつ打ったときと同じ形にする
  * before：貼り付ける所より前の、同じ行の文字（行の途中に貼るとき）
  * cfg.hankaku が false なら記号は直さない。cfg.ranges.brackets が false なら [[ ]] は直さない
+ * cfg.blocks が false なら ｛｝ は直さない（塊を読まないので、字のまま残す）
  */
 export function normalizePaste(text, cfg, before = "") {
   const lines = text.replace(/\r\n?/g, "\n").split("\n");
   const useHankaku = cfg.hankaku !== false;
   const useBrackets = !!(cfg.ranges && cfg.ranges.brackets);
+  const keep = cfg.blocks === false ? new Set(["｛", "｝"]) : new Set();
   return lines
     .map((line, i) => {
       const lead = i === 0 ? before : "";
       let typed = lead;
       for (const ch of line) {
-        typed += (useHankaku && convert(ch, typed)) || ch;
+        typed += (useHankaku && !keep.has(ch) && convert(ch, typed)) || ch;
         const b = useBrackets ? brackets(typed, cfg.ranges) : undefined;
         if (b !== undefined && b.startsWith(lead)) typed = b; // 貼る所より前の文字は変えない
       }
