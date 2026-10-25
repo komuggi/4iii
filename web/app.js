@@ -130,6 +130,27 @@ function paint() {
   hl.scrollTop = textBox.scrollTop;
 }
 
+/** ▼▲ の閉じミスを知らせる（直さなくても PDF は作れる）。「知らせない」に印があれば、印の欄だけ残す */
+const RANGES_MAX = 10;
+function showRanges(issues) {
+  const ignore = $("ranges-ignore").checked;
+  $("ranges").classList.toggle("hidden", issues.length === 0 && !ignore);
+  $("ranges-note").classList.toggle("hidden", ignore);
+  $("ranges-list").classList.toggle("hidden", ignore);
+  $("ranges-note").textContent = `▼▲ の閉じミスが ${issues.length}件あります（直さなくても PDF は作れます）`;
+  const items = issues.slice(0, RANGES_MAX).map((issue) => {
+    const li = document.createElement("li");
+    li.textContent = `${issue.lnum}行目　${issue.msg}`;
+    return li;
+  });
+  if (issues.length > RANGES_MAX) {
+    const li = document.createElement("li");
+    li.textContent = `ほか ${issues.length - RANGES_MAX}件`;
+    items.push(li);
+  }
+  $("ranges-list").replaceChildren(...items);
+}
+
 /** 全体の文字数と、見出し（トラック）ごとの文字数 */
 function showCounts(res, togaki) {
   const total = document.createElement("span");
@@ -139,7 +160,7 @@ function showCounts(res, togaki) {
   if (!togaki && !cfg.export.pdf.both) status.append("（設定の export.pdf.both が false なので、ト書きありだけ）");
   const warns = [];
   if (res.missing.length > 0) warns.push(`未登録の塊：${res.missing.join("、")}`);
-  for (const issue of parser.checkRanges(res.records, cfg)) warns.push(`${issue.lnum}行目 ${issue.msg}`);
+  showRanges(parser.checkRanges(res.records, cfg));
   for (const w of warns.slice(0, 5)) {
     const span = document.createElement("span");
     span.className = "text-amber-700 dark:text-amber-300";
@@ -225,6 +246,7 @@ configBox.addEventListener("input", () => {
 for (const el of Object.values(box)) el.addEventListener(el.type === "checkbox" ? "change" : "input", fromFields);
 for (const radio of document.querySelectorAll('input[name="vertical"]')) radio.addEventListener("change", fromFields);
 for (const radio of document.querySelectorAll('input[name="togaki"]')) radio.addEventListener("change", update);
+$("ranges-ignore").addEventListener("change", update);
 
 // 設定の保存と読み込み：この PC のファイルとだけやりとりする（どこにも送らない）
 $("save").addEventListener("click", () => {
