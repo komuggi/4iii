@@ -1,4 +1,4 @@
-# 4iii（しーっ）
+# 4iii
 
 音声作品の台本（.txt）を、縦書きの HTML（ト書きあり／なし）にして PDF にします。セリフだけの文字数も数えます。
 書き方・設定・出てくる HTML は、nvim のプラグイン [daihon](https://github.com/komuggi/daihon) と同じです（元は daihon の「台本 → 縦書きの HTML」の所を、nvim なしで動くようにした物。ルビは 4iii にしかありません）。
