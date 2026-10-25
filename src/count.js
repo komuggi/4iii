@@ -93,11 +93,14 @@ export function longLines(records, ctx, limit) {
 export function summary(records, ctx) {
   const per = {};
   let total = 0;
-  for (const r of records) {
-    const n = line(r, ctx, 0);
+  // skip_before_heading：最初のトラックの見出しより前は 0（見出しが1つも無ければ全部数える）
+  const skip = !!(ctx.cfg.count && ctx.cfg.count.skip_before_heading);
+  const first = skip ? records.findIndex((r) => r.kind === "見出し" && r.heading.count) : -1;
+  records.forEach((r, i) => {
+    const n = i < first ? 0 : line(r, ctx, 0);
     per[r.lnum] = n;
     total += n;
-  }
+  });
   const headings = {};
   records.forEach((r, i) => {
     if (r.kind === "見出し" && r.heading.count) {

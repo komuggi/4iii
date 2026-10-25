@@ -127,3 +127,11 @@ test("見出しの枠を空にすると、トラックの見出しを使わな�
   const project = fields.write(fields.START, { ...fields.read(fields.START), heading: "" });
   assert.equal(project.headings.filter((h) => h.count).length, 0);
 });
+
+test("最初のトラックの見出しより前は数えない（skip_before_heading）・見出しが無ければ全部数える", () => {
+  const text = "仕様書の文\n## Track 01\nこんにちは\n";
+  const on = makeConfig({ count: { skip_before_heading: true } });
+  assert.equal(render(text, on, {}).summary.total, 5);
+  assert.equal(render(text, makeConfig({}), {}).summary.total, 10); // 既定（daihon と同じ）は全部数える
+  assert.equal(render("仕様書の文\nこんにちは\n", on, {}).summary.total, 10);
+});

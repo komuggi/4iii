@@ -37,7 +37,8 @@ function useProject(next, showJson) {
   const error = $("config-error");
   try {
     configLib.stripGlobalOnly(next);
-    cfg = makeConfig({ ...next, blocks: false }); // ページは塊を読まない（貼った台本の { } は字のまま）
+    // ページは塊を読まない（貼った台本の { } は字のまま）・最初のトラックより前（仕様書など）は数えない
+    cfg = makeConfig({ ...next, blocks: false, count: { ...(next.count ?? {}), skip_before_heading: true } });
     project = next;
     error.textContent = "";
   } catch (err) {

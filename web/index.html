@@ -39,7 +39,7 @@
         <label class="contents text-neutral-600 dark:text-neutral-300">コメント・演技指示 <input type="text" id="f-shiji" autocomplete="off" spellcheck="false" class="field"></label>
         <label class="contents text-neutral-600 dark:text-neutral-300">その他（セリフにしない） <input type="text" id="f-other" autocomplete="off" spellcheck="false" class="field"></label>
         <label class="col-span-full inline-flex items-center gap-1.5"><input type="checkbox" id="f-other-out">その他も PDF に出す</label>
-        <p class="hint col-span-full">行の頭がこの記号で始まる行を、その種類にします。どれにも当たらない行がセリフで、文字数はセリフだけを数えます。SE とコメント・演技指示は「ト書きあり」にだけ出ます。見出しの行でページが変わり、トラックごとの文字数を出します（「トラック」のような字も使えます）。</p>
+        <p class="hint col-span-full">行の頭がこの記号で始まる行を、その種類にします。どれにも当たらない行がセリフで、文字数はセリフだけを数えます。SE とコメント・演技指示は「ト書きあり」にだけ出ます。見出しの行でページが変わり、トラックごとの文字数を出します（「トラック」のような字も使えます）。最初の見出しより前（仕様書など）は数えません。</p>
         <p class="hint col-span-full" id="f-extra"></p>
         <div class="col-span-full flex flex-wrap gap-2">
           <button type="button" id="save" class="btn">この設定で保存</button>

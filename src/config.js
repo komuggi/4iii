@@ -38,6 +38,8 @@ export const defaults = {
     include: ["セリフ"],
     ignore_chars: "",
     long_line: 30,
+    // 最初の見出し（トラック・count のある見出し）より前の行（仕様書など）は数えない（4iii だけ・ブラウザのページは true）
+    skip_before_heading: false,
   },
 
   words: { se: [], shiji: [] },
