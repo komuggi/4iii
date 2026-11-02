@@ -158,16 +158,13 @@ function showCounts(res, togaki) {
   total.textContent = `全体 ${res.summary.total.toLocaleString()}文字`;
   status.replaceChildren(total);
   if (!togaki && !cfg.export.pdf.both) status.append("（設定の export.pdf.both が false なので、ト書きありだけ）");
-  const warns = [];
-  if (res.missing.length > 0) warns.push(`未登録の塊：${res.missing.join("、")}`);
   showRanges(parser.checkRanges(res.records, cfg));
-  for (const w of warns.slice(0, 5)) {
+  if (res.missing.length > 0) {
     const span = document.createElement("span");
     span.className = "text-amber-700 dark:text-amber-300";
-    span.textContent = ` ／ ${w}`;
+    span.textContent = ` ／ 未登録の塊：${res.missing.join("、")}`;
     status.append(span);
   }
-  if (warns.length > 5) status.append(` ほか ${warns.length - 5}件`);
 
   const heads = res.records.filter((r) => r.kind === "見出し");
   const top = Math.min(...heads.map((r) => r.level));

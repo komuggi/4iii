@@ -154,8 +154,8 @@ export function validate(cfg) {
   if (cfg.ruby !== false && !isTable(cfg.ruby)) return fail(`ruby は表か false で書いてください（今は ${show(cfg.ruby)}）`);
   const headings = Array.isArray(cfg.headings) ? cfg.headings : [];
   for (const [i, h] of headings.entries()) {
-    if (typeof h.level !== "number" || h.prefix === undefined || h.prefix === null || h.prefix === "") {
-      return fail(`headings の ${i + 1} 番目には level と prefix が要ります`);
+    if (!Number.isInteger(h.level) || h.level < 1 || h.prefix === undefined || h.prefix === null || h.prefix === "") {
+      return fail(`headings の ${i + 1} 番目には level（1 からの整数）と prefix が要ります`);
     }
   }
   for (const key of ["parts_dir", "export.dir", "export.pdf.css"]) {

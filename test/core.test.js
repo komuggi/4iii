@@ -30,6 +30,8 @@ test("設定：まちがいを知らせる", () => {
   eq(validate(cfg({ mode: "two" })).message, 'mode は "solo" か "multi" です（今は "two"）');
   eq(validate(cfg({ line_types: [{ name: "セリフ", prefix: "!" }] })).ok, false);
   eq(validate(cfg({ line_types: [{ name: "指示" }] })).ok, false);
+  eq(validate(cfg({ headings: [{ level: 0, prefix: "# " }] })).ok, false); // <h0> にしない
+  eq(validate(cfg({ headings: [{ level: 1.5, prefix: "# " }] })).ok, false);
   eq(validate(cfg()).ok, true);
 });
 
