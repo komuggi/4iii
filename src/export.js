@@ -61,15 +61,23 @@ export function items(records, cfg, opts) {
     pendingGap = false;
   };
 
-  // 役ごとの見た目（export.pdf.shade の網掛け・dim の薄く）：話す人の行から、空行・見出し・ト書き・ほかの人の行の手前まで同じ人
+  // 役ごとの見た目（export.pdf.shade の網掛け・dim の薄く・hang_lead の字下げ）：話す人の行から、空行・見出し・ト書き・ほかの人の行の手前まで同じ人
+  // role_note（「このトラックのセリフは全て」）のト書きは、その行を役の網掛けにし、次の見出しまでの名前の無い台詞をその役にする（dim だけ効く）
   const shadeNames = isTableOf(pdf.shade) ? Object.keys(pdf.shade) : [];
   const dimNames = Array.isArray(pdf.dim) ? pdf.dim : [];
-  const byRole = shadeNames.length > 0 || dimNames.length > 0;
-  let role;
+  const roles = roleNames(cfg);
+  const note = typeof pdf.role_note === "string" && pdf.role_note !== "" ? pdf.role_note : undefined;
+  const byRole = roles.size > 0;
+  let role; // 今の話す人（役名の行から）
+  let trackRole; // role_note で決めた、この見出しの中の役
+  let declared; // この行が role_note の行ならその役
   const line = (r, text, lead) => {
-    const shade = role !== undefined && shadeNames.includes(role) ? shadeNames.indexOf(role) : undefined;
-    const dim = role !== undefined && dimNames.includes(role);
-    push({ kind: "line", class: classOf(r), text, lead, speaker: r.speaker, togaki: r.kind !== "セリフ", shade, dim });
+    const own = declared ?? role;
+    const shade = own !== undefined && shadeNames.includes(own) ? shadeNames.indexOf(own) : undefined;
+    const dimRole = own ?? (r.kind === "セリフ" ? trackRole : undefined);
+    const dim = dimRole !== undefined && dimNames.includes(dimRole);
+    const hang = role !== undefined && roles.has(role);
+    push({ kind: "line", class: classOf(r), text, lead, speaker: r.speaker, togaki: r.kind !== "セリフ", shade, dim, hang });
   };
 
   const partInline = (name) => {
@@ -96,9 +104,19 @@ export function items(records, cfg, opts) {
       const alone = refs.length === 1 && trim(r.text) === refs[0].match;
       if (byRole) {
         const who = speakerOf(r);
+        declared = undefined;
+        if (r.kind === "見出し") trackRole = undefined;
         if (r.kind === "空行" || r.kind === "見出し") role = undefined;
         else if (who !== undefined) role = who;
-        else if (r.kind !== "セリフ" && r.output) role = undefined;
+        else if (r.kind !== "セリフ" && r.output) {
+          role = undefined;
+          const body = String(r.body ?? r.text);
+          const at = note ? body.indexOf(note) : -1;
+          if (at >= 0) {
+            const name = trim(body.slice(at + note.length).replace(/[)）]\s*$/, ""));
+            if (roles.has(name)) declared = trackRole = name;
+          }
+        }
       }
 
       if (r.kind === "空行") {
@@ -189,12 +207,7 @@ export function build(records, cfg, opts) {
     if (inKeep) body.push("</div>");
     inKeep = false;
   };
-  // 役名（hang_lead で字下げへ出す名前）：shade・dim・characters に書いた名前。指示のかっこ（「(▼扉の向こうの声)」）は入れない
-  const roles = new Set([
-    ...Object.keys(isTableOf(pdf.shade) ? pdf.shade : {}),
-    ...(Array.isArray(pdf.dim) ? pdf.dim : []),
-    ...(Array.isArray(cfg.characters) ? cfg.characters : []).map((c) => (typeof c === "string" ? c : c && c.name)),
-  ]);
+  const roles = roleNames(cfg);
   // 行番号は最初の見出しから（見出しが無ければ全部）
   const firstHeading = pdf.line_numbers ? list.findIndex((it) => it.kind === "heading") : -1;
   for (const [i, it] of list.entries()) {
@@ -226,7 +239,8 @@ export function build(records, cfg, opts) {
         html = `<span class="lead${who}">${textHtml(it.lead)}</span>` + html;
       }
       const pre = i < firstHeading ? " pre" : "";
-      body.push(`<p class="${it.class}${it.shade !== undefined ? ` shade-${it.shade}` : ""}${it.dim ? " dim" : ""}${pre}">${html}</p>`);
+      const hang = pdf.hang_lead && it.hang ? " role" : "";
+      body.push(`<p class="${it.class}${it.shade !== undefined ? ` shade-${it.shade}` : ""}${it.dim ? " dim" : ""}${hang}${pre}">${html}</p>`);
     }
   }
   closeKeep();
@@ -241,7 +255,7 @@ export function build(records, cfg, opts) {
     css(pdf),
     // split_lead のかっこがある時だけ（無ければ daihon と同じ CSS のまま）
     ...(list.some((it) => it.lead !== undefined) ? [LEAD_CSS] : []),
-    ...(pdf.hang_lead && list.some((it) => it.lead !== undefined) ? [hangCss(cssValue(pdf.serifu_indent, "3em"))] : []),
+    ...(pdf.hang_lead && list.some((it) => it.lead !== undefined) ? hangCss(cssValue(typeof pdf.hang_lead === "string" ? pdf.hang_lead : pdf.serifu_indent, "3em")) : []),
     safeCss(opts.css),
     "</style>",
     "</head>",
@@ -255,9 +269,21 @@ export function build(records, cfg, opts) {
 }
 
 const LEAD_CSS = ".lead { font-size: 0.9em; color: #555; margin-inline-end: 0.5em; }";
-// 役名を字下げ（serifu_indent）の中に入れ、台詞の頭の手前にそろえる。役名の字は 0.9em なので、幅は字下げ ÷ 0.9
-const hangCss = (indent) =>
-  `.lead.who { display: inline-block; box-sizing: border-box; inline-size: calc(${indent} / 0.9); margin-inline-start: calc(${indent} / -0.9); margin-inline-end: 0; padding-inline-end: 0.5em; text-align: end; }`;
+// 役名を字下げの中に入れ、台詞の頭の手前にそろえる（役の行は字下げを役名の幅に）。役名の字は 0.9em なので、幅は字下げ ÷ 0.9
+const hangCss = (indent) => [
+  `.serifu.role { padding-inline-start: ${indent}; }`,
+  `.lead.who { display: inline-block; box-sizing: border-box; inline-size: calc(${indent} / 0.9); margin-inline-start: calc(${indent} / -0.9); margin-inline-end: 0; padding-inline-end: 0.5em; text-align: end; }`,
+];
+
+/** 役名：shade・dim・characters に書いた名前（hang_lead で字下げへ出す名前・role_note で読む名前）。指示のかっこ（「(▼扉の向こうの声)」）は入れない */
+function roleNames(cfg) {
+  const pdf = cfg.export.pdf;
+  return new Set([
+    ...Object.keys(isTableOf(pdf.shade) ? pdf.shade : {}),
+    ...(Array.isArray(pdf.dim) ? pdf.dim : []),
+    ...(Array.isArray(cfg.characters) ? cfg.characters : []).map((c) => (typeof c === "string" ? c : c && c.name)),
+  ]);
+}
 const or = (v, fallback) => (v === undefined || v === null || v === false ? fallback : v);
 // 設定から <style> に入れる値：CSS や HTML を抜け出せる記号（< > { } ;）は外す
 const cssValue = (v, fallback) => String(or(v, fallback)).replace(/[<>{};]/g, "");

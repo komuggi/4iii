@@ -84,7 +84,8 @@ export const defaults = {
       vertical_marks: { open: "◀", close: "▶" },
       upright: false, // 縦書きでローマ字と3桁以上の数字を立てる（4iii だけ）
       line_numbers: false, // 本文の行に通しの番号を付ける（4iii だけ）
-      hang_lead: false, // 役名のかっこ（split_lead の「(ルル)」・名前は shade・dim・characters から）を字下げの所へ出し、台詞の頭を続きの行とそろえる。字下げ（serifu_indent）は一番長い役名より広く（4iii だけ）
+      hang_lead: false, // 役名のかっこ（split_lead の「(ルル)」・名前は shade・dim・characters から）を字下げの所へ出し、台詞の頭を続きの行とそろえる。true は serifu_indent の幅・"6em" のように幅も書ける。幅は一番長い役名より広く（4iii だけ）
+      role_note: undefined, // 「このトラックのセリフは全て」のように、ト書きのこの字の後ろの役名を、次の見出しまでの名前の無い台詞の役にする（その行は役の網掛け・台詞は dim だけ効く）（4iii だけ）
       keep_blocks: false, // 空行で区切られた1かたまり（話す人の行とその続き）をページで分けない（4iii だけ）
       dim: undefined, // 薄く出す役の名前 ["ヴィヴィ"]（声優さんが読まない役）。決め方は shade と同じ（4iii だけ）
       shade: undefined, // 話す人ごとの網掛け { "ルル": "#FFF2CC" }。split_lead のかっこ「(ルル)」か multi の名前で決める（4iii だけ）
@@ -165,10 +166,16 @@ export function validate(cfg) {
     }
   }
   const pdf = getPath(cfg, ["export", "pdf"]) ?? {};
-  for (const key of ["upright", "line_numbers", "keep_blocks", "hang_lead"]) {
+  for (const key of ["upright", "line_numbers", "keep_blocks"]) {
     if (pdf[key] !== undefined && typeof pdf[key] !== "boolean") {
       return fail(`export.pdf.${key} は true か false です（今は ${show(pdf[key])}）`);
     }
+  }
+  if (pdf.hang_lead !== undefined && typeof pdf.hang_lead !== "boolean" && typeof pdf.hang_lead !== "string") {
+    return fail(`export.pdf.hang_lead は true・false か幅（"6em" など）です（今は ${show(pdf.hang_lead)}）`);
+  }
+  if (pdf.role_note !== undefined && pdf.role_note !== null && typeof pdf.role_note !== "string") {
+    return fail(`export.pdf.role_note は字で書いてください（今は ${show(pdf.role_note)}）`);
   }
   if (pdf.dim !== undefined && pdf.dim !== null && !(Array.isArray(pdf.dim) && pdf.dim.every((n) => typeof n === "string"))) {
     return fail(`export.pdf.dim は ["名前", ...] で書いてください（今は ${show(pdf.dim)}）`);

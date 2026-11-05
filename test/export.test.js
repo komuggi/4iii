@@ -169,7 +169,28 @@ test("書き出し：hang_lead で役名だけのかっこを字下げの所へ�
   has(s, '<span class="lead who">(ヴィヴィ)</span>おい');
   has(s, '<span class="lead">(恥ずかしそうに)</span>ねぇ'); // 役名に無い名前は指示として、そのまま
   has(s, ".lead.who { display: inline-block; box-sizing: border-box; inline-size: calc(6em / 0.9); margin-inline-start: calc(6em / -0.9);");
+  has(s, '<p class="serifu role"><span class="lead who">(ルル)</span>ふふ</p>');
+  has(s, '<p class="serifu role">続き</p>');
+  has(s, ".serifu.role { padding-inline-start: 6em; }");
   hasnt(html(["(ルル)ふふ"], true, { split_lead: true }).html, "who");
+  // 幅を書くと、役の行だけその幅（ほかの台詞は serifu_indent のまま）
+  const w = html(["(ルル)ふふ", "", "ひとり"], true, { split_lead: true, characters: ["ルル"], export: { pdf: { hang_lead: "6em", serifu_indent: "2em" } } }).html;
+  has(w, ".serifu.role { padding-inline-start: 6em; }");
+  has(w, ".serifu { padding-inline-start: 2em; }");
+  has(w, '<p class="serifu">ひとり</p>');
+});
+
+test("書き出し：role_note の行は役の網掛け。次の見出しまでの名前の無い台詞はその役（dim だけ効く）", () => {
+  const o = { split_lead: true, export: { pdf: { shade: { ルル: "#FFF2CC" }, dim: ["ヴィヴィ"], role_note: "このトラックのセリフは全て" } } };
+  const s = html(["## Track 03", "(このトラックのセリフは全てルル)", "(SE:足音)", "ひとりのルル", "## Track 04", "(このトラックのセリフは全てヴィヴィ)", "ひとりのヴィヴィ", "", "まだヴィヴィ", "## Track 05", "だれ"], true, o).html;
+  has(s, '<p class="t-場面 shade-0">(このトラックのセリフは全てルル)</p>');
+  has(s, '<p class="t-場面">(SE:足音)</p>');
+  has(s, '<p class="serifu">ひとりのルル</p>'); // ルルの台詞は網掛けしない
+  has(s, '<p class="t-場面 dim">(このトラックのセリフは全てヴィヴィ)</p>');
+  has(s, '<p class="serifu dim">ひとりのヴィヴィ</p>');
+  has(s, '<p class="serifu dim">まだヴィヴィ</p>'); // 空行をはさんでも見出しまで
+  has(s, '<p class="serifu">だれ</p>'); // 見出しで終わる
+  has(html(["(このトラックのセリフは全てだれか)", "ひとり"], true, o).html, '<p class="serifu">ひとり</p>'); // 役名に無い名前は読まない
 });
 
 test("render：ト書きあり／なしの2つ。both = false で1つ", () => {
