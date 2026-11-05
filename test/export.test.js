@@ -158,7 +158,7 @@ test("書き出し：dim で読まない役の行を薄く（決め方は shade 
   has(s, '<p class="t-場面">(SE:足音)</p>');
   has(s, '<p class="serifu">その後</p>');
   has(s, '<p class="serifu shade-0"><span class="lead">(ルル)</span>ふふ</p>');
-  has(s, ".dim { opacity: 0.4; }");
+  has(s, ".dim { color: #a0a0a0; }");
   hasnt(html(["おい"], true).html, "dim");
 });
 

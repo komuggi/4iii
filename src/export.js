@@ -306,6 +306,7 @@ export function css(pdf) {
     ...(pdf.line_numbers ? lineNumberCss(vertical, or(pdf.line_height, 1.8)) : []),
     ...(pdf.keep_blocks ? [".keep { break-inside: avoid; }"] : []),
     ...Object.values(isTableOf(pdf.shade) ? pdf.shade : {}).map((c, i) => `.shade-${i} { background: ${cssValue(c, "transparent")}; }`),
-    ...(Array.isArray(pdf.dim) && pdf.dim.length > 0 ? [".dim { opacity: 0.4; }"] : []),
+    // 薄くするのは字の色だけ（opacity だと行番号や網掛けまで薄くなり、ほかの灰色とそろわない）
+    ...(Array.isArray(pdf.dim) && pdf.dim.length > 0 ? [".dim { color: #a0a0a0; }"] : []),
   ].join("\n");
 }
