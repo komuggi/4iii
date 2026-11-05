@@ -130,8 +130,10 @@ test("書き出し：shade で話す人の行から空行・ト書き・ほか�
 test("書き出し：line_numbers で本文の行に通しの番号（最初の見出しから・空行・見出し・文字数一覧は数えない）", () => {
   const s = html(["仕様", "## Track 01", "ただいま"], true, { export: { pdf: { line_numbers: true } } }).html;
   has(s, "body { counter-reset: ln; }");
-  has(s, "p:not(.gap):not(.count-row):not(.count-total):not(.pre) { counter-increment: ln; }");
-  has(s, "display: inline-block; margin-bottom: 0.6em;"); // 縦書きは字の真上
+  has(s, "p:not(.gap):not(.count-row):not(.count-total):not(.pre) { counter-increment: ln; position: relative; }");
+  has(s, "top: -1.8em; right: 0; width: 3.273em; text-align: center;"); // 縦書きは上にそろえ、最初の列（幅 1.8 ÷ 0.55）の真上
+  has(html(["ただいま"], true, { export: { pdf: { line_numbers: true, line_height: "2em" } } }).html, "width: 3.636em;");
+  has(html(["ただいま"], true, { export: { pdf: { line_numbers: true, line_height: "normal" } } }).html, "left: 0; right: 0;");
   has(s, '<p class="serifu pre">仕様</p>'); // 最初の見出しより前は数えない
   has(s, '<p class="serifu">ただいま</p>');
   has(html(["ただいま"], true, { export: { pdf: { line_numbers: true } } }).html, '<p class="serifu">ただいま</p>'); // 見出しが無ければ全部

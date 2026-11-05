@@ -252,17 +252,22 @@ export const safeCss = (s) => String(s ?? "").replace(/<\/(style)/gi, "<\\/$1");
 
 /**
  * 行番号（export.pdf.line_numbers）：本文の行（セリフとト書き・空行と見出しは数えない）に通しの番号。
- * 見出しがあれば最初の見出しから数える（その前の仕様書などは .pre で外す）。縦書きは行の字の真上に横向きで、横書きは行の左の余白に
+ * 見出しがあれば最初の見出しから数える（その前の仕様書などは .pre で外す）。
+ * 縦書きはページの上にそろえて、その行の最初の列の真上に横向きで（字下げのあるセリフもト書きも同じ高さ）。横書きは行の左の余白に
  */
-function lineNumberCss(vertical) {
+const LN_SIZE = 0.55; // 番号の字の大きさ（本文の何倍か）
+function lineNumberCss(vertical, lineHeight) {
   const lines = "p:not(.gap):not(.count-row):not(.count-total):not(.pre)";
-  const look = "content: counter(ln); writing-mode: horizontal-tb; font-size: 0.55em; line-height: 1; color: #888;";
+  const look = `content: counter(ln); position: absolute; writing-mode: horizontal-tb; font-size: ${LN_SIZE}em; line-height: 1; color: #888;`;
+  // 列の幅＝行の高さ（本文の em）。番号の字の em に直して、右の列（最初の列）の幅にそろえる
+  const lh = Number.parseFloat(lineHeight);
+  const col = Number.isFinite(lh) && lh > 0 ? `right: 0; width: ${+(lh / LN_SIZE).toFixed(3)}em;` : "left: 0; right: 0;";
   return [
     "body { counter-reset: ln; }",
-    vertical ? `${lines} { counter-increment: ln; }` : `${lines} { counter-increment: ln; position: relative; }`,
+    `${lines} { counter-increment: ln; position: relative; }`,
     vertical
-      ? `${lines}::before { ${look} display: inline-block; margin-bottom: 0.6em; }`
-      : `${lines}::before { ${look} position: absolute; left: -3.5em; top: 0; width: 3em; text-align: right; }`,
+      ? `${lines}::before { ${look} top: -1.8em; ${col} text-align: center; }`
+      : `${lines}::before { ${look} left: -3.5em; top: 0; width: 3em; text-align: right; }`,
   ];
 }
 
@@ -298,7 +303,7 @@ export function css(pdf) {
     ".count-total { font-weight: bold; }",
     // 足した設定の見た目は、使う時だけ（使わなければ daihon と同じ CSS のまま）
     ...(vertical && pdf.upright ? [".up { text-orientation: upright; }"] : []),
-    ...(pdf.line_numbers ? lineNumberCss(vertical) : []),
+    ...(pdf.line_numbers ? lineNumberCss(vertical, or(pdf.line_height, 1.8)) : []),
     ...(pdf.keep_blocks ? [".keep { break-inside: avoid; }"] : []),
     ...Object.values(isTableOf(pdf.shade) ? pdf.shade : {}).map((c, i) => `.shade-${i} { background: ${cssValue(c, "transparent")}; }`),
     ...(Array.isArray(pdf.dim) && pdf.dim.length > 0 ? [".dim { opacity: 0.4; }"] : []),
