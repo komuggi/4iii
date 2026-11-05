@@ -127,13 +127,37 @@ test("書き出し：shade で話す人の行から空行・ト書き・ほか�
   hasnt(m, "body{display");
 });
 
-test("書き出し：line_numbers で本文の行に通しの番号（空行・見出し・文字数一覧は数えない）", () => {
-  const s = html(["ただいま"], true, { export: { pdf: { line_numbers: true } } }).html;
+test("書き出し：line_numbers で本文の行に通しの番号（最初の見出しから・空行・見出し・文字数一覧は数えない）", () => {
+  const s = html(["仕様", "## Track 01", "ただいま"], true, { export: { pdf: { line_numbers: true } } }).html;
   has(s, "body { counter-reset: ln; }");
-  has(s, "p:not(.gap):not(.count-row):not(.count-total) { counter-increment: ln;");
-  has(s, "content: counter(ln); position: absolute; top: -2.4em;");
-  hasnt(html(["ただいま"], true).html, "counter(ln)");
+  has(s, "p:not(.gap):not(.count-row):not(.count-total):not(.pre) { counter-increment: ln; }");
+  has(s, "display: inline-block; margin-bottom: 0.6em;"); // 縦書きは字の真上
+  has(s, '<p class="serifu pre">仕様</p>'); // 最初の見出しより前は数えない
+  has(s, '<p class="serifu">ただいま</p>');
+  has(html(["ただいま"], true, { export: { pdf: { line_numbers: true } } }).html, '<p class="serifu">ただいま</p>'); // 見出しが無ければ全部
+  hasnt(html(["仕様", "## Track 01"], true).html, "pre");
   has(html(["ただいま"], true, { export: { pdf: { line_numbers: true, vertical: false } } }).html, "left: -3.5em;");
+});
+
+test("書き出し：keep_blocks で空行までの1かたまりをくくる（見出し・空行の前で閉じる）", () => {
+  const k = { export: { pdf: { keep_blocks: true } } };
+  const s = html(["ふふ", "続き", "", "まだ", "## Track 02", "次"], true, k).html;
+  has(s, '<div class="keep">\n<p class="serifu">ふふ</p>\n<p class="serifu">続き</p>\n</div>\n<p class="gap"></p>\n<div class="keep">\n<p class="serifu">まだ</p>\n</div>\n<h2');
+  has(s, '<div class="keep">\n<p class="serifu">次</p>\n</div>\n</body>');
+  has(s, ".keep { break-inside: avoid; }");
+  hasnt(html(["ただいま"], true).html, 'class="keep"');
+});
+
+test("書き出し：dim で読まない役の行を薄く（決め方は shade と同じ・両方に使える）", () => {
+  const o = { split_lead: true, export: { pdf: { shade: { ルル: "#FFF2CC" }, dim: ["ヴィヴィ"] } } };
+  const s = html(["(ヴィヴィ)おい", "まだ", "(SE:足音)", "その後", "(ルル)ふふ"], true, o).html;
+  has(s, '<p class="serifu dim"><span class="lead">(ヴィヴィ)</span>おい</p>');
+  has(s, '<p class="serifu dim">まだ</p>');
+  has(s, '<p class="t-場面">(SE:足音)</p>');
+  has(s, '<p class="serifu">その後</p>');
+  has(s, '<p class="serifu shade-0"><span class="lead">(ルル)</span>ふふ</p>');
+  has(s, ".dim { opacity: 0.4; }");
+  hasnt(html(["おい"], true).html, "dim");
 });
 
 test("render：ト書きあり／なしの2つ。both = false で1つ", () => {

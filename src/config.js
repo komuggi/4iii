@@ -84,6 +84,8 @@ export const defaults = {
       vertical_marks: { open: "◀", close: "▶" },
       upright: false, // 縦書きでローマ字と3桁以上の数字を立てる（4iii だけ）
       line_numbers: false, // 本文の行に通しの番号を付ける（4iii だけ）
+      keep_blocks: false, // 空行で区切られた1かたまり（話す人の行とその続き）をページで分けない（4iii だけ）
+      dim: undefined, // 薄く出す役の名前 ["ヴィヴィ"]（声優さんが読まない役）。決め方は shade と同じ（4iii だけ）
       shade: undefined, // 話す人ごとの網掛け { "ルル": "#FFF2CC" }。split_lead のかっこ「(ルル)」か multi の名前で決める（4iii だけ）
       css: undefined, // 自分の CSS（作品フォルダからの場所）
       command: undefined, // daihon では nvim の設定でだけ変えられる。ここでは使わない
@@ -162,10 +164,13 @@ export function validate(cfg) {
     }
   }
   const pdf = getPath(cfg, ["export", "pdf"]) ?? {};
-  for (const key of ["upright", "line_numbers"]) {
+  for (const key of ["upright", "line_numbers", "keep_blocks"]) {
     if (pdf[key] !== undefined && typeof pdf[key] !== "boolean") {
       return fail(`export.pdf.${key} は true か false です（今は ${show(pdf[key])}）`);
     }
+  }
+  if (pdf.dim !== undefined && pdf.dim !== null && !(Array.isArray(pdf.dim) && pdf.dim.every((n) => typeof n === "string"))) {
+    return fail(`export.pdf.dim は ["名前", ...] で書いてください（今は ${show(pdf.dim)}）`);
   }
   if (pdf.shade !== undefined && pdf.shade !== null) {
     if (!isTable(pdf.shade) || Array.isArray(pdf.shade) || Object.values(pdf.shade).some((c) => typeof c !== "string")) {

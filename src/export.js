@@ -61,11 +61,16 @@ export function items(records, cfg, opts) {
     pendingGap = false;
   };
 
-  // 網掛け（export.pdf.shade）：話す人の行から、空行・見出し・ト書き・ほかの人の行の手前まで。shade は何番目の人か
+  // 役ごとの見た目（export.pdf.shade の網掛け・dim の薄く）：話す人の行から、空行・見出し・ト書き・ほかの人の行の手前まで同じ人
   const shadeNames = isTableOf(pdf.shade) ? Object.keys(pdf.shade) : [];
-  let shade;
-  const line = (r, text, lead) =>
-    push({ kind: "line", class: classOf(r), text, lead, speaker: r.speaker, togaki: r.kind !== "セリフ", shade });
+  const dimNames = Array.isArray(pdf.dim) ? pdf.dim : [];
+  const byRole = shadeNames.length > 0 || dimNames.length > 0;
+  let role;
+  const line = (r, text, lead) => {
+    const shade = role !== undefined && shadeNames.includes(role) ? shadeNames.indexOf(role) : undefined;
+    const dim = role !== undefined && dimNames.includes(role);
+    push({ kind: "line", class: classOf(r), text, lead, speaker: r.speaker, togaki: r.kind !== "セリフ", shade, dim });
+  };
 
   const partInline = (name) => {
     const lines = getPart(name);
@@ -89,11 +94,11 @@ export function items(records, cfg, opts) {
     for (const r of recs) {
       const refs = r.refs || [];
       const alone = refs.length === 1 && trim(r.text) === refs[0].match;
-      if (shadeNames.length > 0) {
+      if (byRole) {
         const who = speakerOf(r);
-        if (r.kind === "空行" || r.kind === "見出し") shade = undefined;
-        else if (who !== undefined) shade = shadeNames.includes(who) ? shadeNames.indexOf(who) : undefined;
-        else if (r.kind !== "セリフ" && r.output) shade = undefined;
+        if (r.kind === "空行" || r.kind === "見出し") role = undefined;
+        else if (who !== undefined) role = who;
+        else if (r.kind !== "セリフ" && r.output) role = undefined;
       }
 
       if (r.kind === "空行") {
@@ -178,7 +183,21 @@ export function build(records, cfg, opts) {
       .join("");
 
   const body = [];
-  for (const it of list) {
+  // keep_blocks：空行で区切られた1かたまりを <div class="keep"> でくくり、ページで分けない
+  let inKeep = false;
+  const closeKeep = () => {
+    if (inKeep) body.push("</div>");
+    inKeep = false;
+  };
+  // 行番号は最初の見出しから（見出しが無ければ全部）
+  const firstHeading = pdf.line_numbers ? list.findIndex((it) => it.kind === "heading") : -1;
+  for (const [i, it] of list.entries()) {
+    if (pdf.keep_blocks && it.kind === "line" && !inKeep) {
+      body.push('<div class="keep">');
+      inKeep = true;
+    } else if (it.kind !== "line") {
+      closeKeep();
+    }
     if (it.kind === "gap") {
       body.push('<p class="gap"></p>');
     } else if (it.kind === "heading") {
@@ -196,9 +215,11 @@ export function build(records, cfg, opts) {
         if (html.startsWith(name)) html = `<span class="speaker">${name}</span>` + html.slice(name.length);
       }
       if (it.lead !== undefined) html = `<span class="lead">${textHtml(it.lead)}</span>` + html;
-      body.push(`<p class="${it.class}${it.shade !== undefined ? ` shade-${it.shade}` : ""}">${html}</p>`);
+      const pre = i < firstHeading ? " pre" : "";
+      body.push(`<p class="${it.class}${it.shade !== undefined ? ` shade-${it.shade}` : ""}${it.dim ? " dim" : ""}${pre}">${html}</p>`);
     }
   }
+  closeKeep();
 
   const html = [
     "<!doctype html>",
@@ -229,14 +250,19 @@ const cssValue = (v, fallback) => String(or(v, fallback)).replace(/[<>{};]/g, ""
 // 自分の CSS（export.pdf.css）：</style> で抜け出せないようにする
 export const safeCss = (s) => String(s ?? "").replace(/<\/(style)/gi, "<\\/$1");
 
-/** 行番号（export.pdf.line_numbers）：本文の行（セリフとト書き・空行と見出しは数えない）に通しの番号。縦書きは行の上、横書きは行の左の余白に小さく横向きで */
+/**
+ * 行番号（export.pdf.line_numbers）：本文の行（セリフとト書き・空行と見出しは数えない）に通しの番号。
+ * 見出しがあれば最初の見出しから数える（その前の仕様書などは .pre で外す）。縦書きは行の字の真上に横向きで、横書きは行の左の余白に
+ */
 function lineNumberCss(vertical) {
-  const lines = "p:not(.gap):not(.count-row):not(.count-total)";
-  const at = vertical ? "top: -2.4em; left: -1em; right: -1em; text-align: center;" : "left: -3.5em; top: 0; width: 3em; text-align: right;";
+  const lines = "p:not(.gap):not(.count-row):not(.count-total):not(.pre)";
+  const look = "content: counter(ln); writing-mode: horizontal-tb; font-size: 0.55em; line-height: 1; color: #888;";
   return [
     "body { counter-reset: ln; }",
-    `${lines} { counter-increment: ln; position: relative; }`,
-    `${lines}::before { content: counter(ln); position: absolute; ${at} writing-mode: horizontal-tb; font-size: 0.55em; line-height: 1; color: #888; }`,
+    vertical ? `${lines} { counter-increment: ln; }` : `${lines} { counter-increment: ln; position: relative; }`,
+    vertical
+      ? `${lines}::before { ${look} display: inline-block; margin-bottom: 0.6em; }`
+      : `${lines}::before { ${look} position: absolute; left: -3.5em; top: 0; width: 3em; text-align: right; }`,
   ];
 }
 
@@ -273,6 +299,8 @@ export function css(pdf) {
     // 足した設定の見た目は、使う時だけ（使わなければ daihon と同じ CSS のまま）
     ...(vertical && pdf.upright ? [".up { text-orientation: upright; }"] : []),
     ...(pdf.line_numbers ? lineNumberCss(vertical) : []),
+    ...(pdf.keep_blocks ? [".keep { break-inside: avoid; }"] : []),
     ...Object.values(isTableOf(pdf.shade) ? pdf.shade : {}).map((c, i) => `.shade-${i} { background: ${cssValue(c, "transparent")}; }`),
+    ...(Array.isArray(pdf.dim) && pdf.dim.length > 0 ? [".dim { opacity: 0.4; }"] : []),
   ].join("\n");
 }
