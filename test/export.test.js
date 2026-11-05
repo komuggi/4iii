@@ -127,6 +127,15 @@ test("書き出し：shade で話す人の行から空行・ト書き・ほか�
   hasnt(m, "body{display");
 });
 
+test("書き出し：line_numbers で本文の行に通しの番号（空行・見出し・文字数一覧は数えない）", () => {
+  const s = html(["ただいま"], true, { export: { pdf: { line_numbers: true } } }).html;
+  has(s, "body { counter-reset: ln; }");
+  has(s, "p:not(.gap):not(.count-row):not(.count-total) { counter-increment: ln;");
+  has(s, "content: counter(ln); position: absolute; top: -2.4em;");
+  hasnt(html(["ただいま"], true).html, "counter(ln)");
+  has(html(["ただいま"], true, { export: { pdf: { line_numbers: true, vertical: false } } }).html, "left: -3.5em;");
+});
+
 test("render：ト書きあり／なしの2つ。both = false で1つ", () => {
   const two = render("ただいま\n", makeConfig({}), { name: "x" });
   assert.deepEqual(

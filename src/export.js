@@ -229,6 +229,17 @@ const cssValue = (v, fallback) => String(or(v, fallback)).replace(/[<>{};]/g, ""
 // 自分の CSS（export.pdf.css）：</style> で抜け出せないようにする
 export const safeCss = (s) => String(s ?? "").replace(/<\/(style)/gi, "<\\/$1");
 
+/** 行番号（export.pdf.line_numbers）：本文の行（セリフとト書き・空行と見出しは数えない）に通しの番号。縦書きは行の上、横書きは行の左の余白に小さく横向きで */
+function lineNumberCss(vertical) {
+  const lines = "p:not(.gap):not(.count-row):not(.count-total)";
+  const at = vertical ? "top: -2.4em; left: -1em; right: -1em; text-align: center;" : "left: -3.5em; top: 0; width: 3em; text-align: right;";
+  return [
+    "body { counter-reset: ln; }",
+    `${lines} { counter-increment: ln; position: relative; }`,
+    `${lines}::before { content: counter(ln); position: absolute; ${at} writing-mode: horizontal-tb; font-size: 0.55em; line-height: 1; color: #888; }`,
+  ];
+}
+
 /** 既定の見た目。export.pdf の値から作る。細かい所は export.pdf.css の自分の CSS で上書きする */
 export function css(pdf) {
   const vertical = pdf.vertical !== false;
@@ -261,6 +272,7 @@ export function css(pdf) {
     ".count-total { font-weight: bold; }",
     // 足した設定の見た目は、使う時だけ（使わなければ daihon と同じ CSS のまま）
     ...(vertical && pdf.upright ? [".up { text-orientation: upright; }"] : []),
+    ...(pdf.line_numbers ? lineNumberCss(vertical) : []),
     ...Object.values(isTableOf(pdf.shade) ? pdf.shade : {}).map((c, i) => `.shade-${i} { background: ${cssValue(c, "transparent")}; }`),
   ].join("\n");
 }

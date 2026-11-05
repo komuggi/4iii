@@ -33,6 +33,7 @@ test("設定：まちがいを知らせる", () => {
   eq(validate(cfg({ headings: [{ level: 0, prefix: "# " }] })).ok, false); // <h0> にしない
   eq(validate(cfg({ headings: [{ level: 1.5, prefix: "# " }] })).ok, false);
   eq(validate(cfg({ export: { pdf: { upright: "yes" } } })).ok, false);
+  eq(validate(cfg({ export: { pdf: { line_numbers: 2 } } })).ok, false);
   eq(validate(cfg({ export: { pdf: { shade: ["ルル"] } } })).ok, false);
   eq(validate(cfg({ export: { pdf: { shade: { ルル: 1 } } } })).ok, false);
   eq(validate(cfg({ export: { pdf: { upright: true, shade: { ルル: "#FFF2CC" } } } })).ok, true);
