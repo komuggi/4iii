@@ -173,6 +173,7 @@ test("書き出し：hang_lead で役名だけのかっこを字下げの所へ�
   has(s, '<p class="serifu role">続き</p>');
   has(s, ".serifu.role { padding-inline-start: 6em; }");
   hasnt(html(["(ルル)ふふ"], true, { split_lead: true }).html, "who");
+  has(html(["(ルル)ふふ", "続き"], false, o).html, '<p class="serifu">続き</p>'); // ト書きなしは役名が出ないので字下げもふつう
   // 幅を書くと、役の行だけその幅（ほかの台詞は serifu_indent のまま）
   const w = html(["(ルル)ふふ", "", "ひとり"], true, { split_lead: true, characters: ["ルル"], export: { pdf: { hang_lead: "6em", serifu_indent: "2em" } } }).html;
   has(w, ".serifu.role { padding-inline-start: 6em; }");

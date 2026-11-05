@@ -239,7 +239,8 @@ export function build(records, cfg, opts) {
         html = `<span class="lead${who}">${textHtml(it.lead)}</span>` + html;
       }
       const pre = i < firstHeading ? " pre" : "";
-      const hang = pdf.hang_lead && it.hang ? " role" : "";
+      // 役名はト書きありにだけ出るので、役の字下げもト書きありだけ
+      const hang = pdf.hang_lead && it.hang && opts.togaki ? " role" : "";
       body.push(`<p class="${it.class}${it.shade !== undefined ? ` shade-${it.shade}` : ""}${it.dim ? " dim" : ""}${hang}${pre}">${html}</p>`);
     }
   }
