@@ -20,6 +20,16 @@ function headingText(r, n) {
   return r.title;
 }
 
+const isTableOf = (t) => t !== null && typeof t === "object" && !Array.isArray(t);
+
+/** 行の話す人：multi の名前か、split_lead のかっこの中（「(ルル)」→「ルル」）。どちらも無ければ undefined */
+export function speakerOf(r) {
+  if (r.speaker !== undefined) return r.speaker;
+  if (r.lead === undefined) return undefined;
+  const m = trim(r.lead).match(/^[(（]([^()（）]+)[)）]$/);
+  return m ? trim(m[1]) : undefined;
+}
+
 /** 書き出す行のクラス名（CSS で見た目を変えるときに使う）。設定から来る名前は、字・数字・_・- のほかを _ にする（HTML に入るので） */
 export function classOf(r) {
   if (r.kind === "セリフ") return "serifu";
@@ -51,8 +61,11 @@ export function items(records, cfg, opts) {
     pendingGap = false;
   };
 
+  // 網掛け（export.pdf.shade）：話す人の行から、空行・見出し・ト書き・ほかの人の行の手前まで。shade は何番目の人か
+  const shadeNames = isTableOf(pdf.shade) ? Object.keys(pdf.shade) : [];
+  let shade;
   const line = (r, text, lead) =>
-    push({ kind: "line", class: classOf(r), text, lead, speaker: r.speaker, togaki: r.kind !== "セリフ" });
+    push({ kind: "line", class: classOf(r), text, lead, speaker: r.speaker, togaki: r.kind !== "セリフ", shade });
 
   const partInline = (name) => {
     const lines = getPart(name);
@@ -76,6 +89,12 @@ export function items(records, cfg, opts) {
     for (const r of recs) {
       const refs = r.refs || [];
       const alone = refs.length === 1 && trim(r.text) === refs[0].match;
+      if (shadeNames.length > 0) {
+        const who = speakerOf(r);
+        if (r.kind === "空行" || r.kind === "見出し") shade = undefined;
+        else if (who !== undefined) shade = shadeNames.includes(who) ? shadeNames.indexOf(who) : undefined;
+        else if (r.kind !== "セリフ" && r.output) shade = undefined;
+      }
 
       if (r.kind === "空行") {
         pendingGap = started;
@@ -134,6 +153,14 @@ const escapeHtml = (s) =>
 /** 縦書きで1〜2桁の数字を縦中横にする */
 const tcy = (s) => s.replace(/(?<![0-9])([0-9]{1,2})(?![0-9])/g, '<span class="tcy">$1</span>');
 
+/** 縦書きでローマ字と3桁以上の数字を立てる（export.pdf.upright）。ほかの所は今までどおり縦中横 */
+const UPRIGHT = /([A-Za-z]+|[0-9]{3,})/;
+const upright = (s) =>
+  s
+    .split(UPRIGHT)
+    .map((p, i) => (i % 2 === 1 ? `<span class="up">${escapeHtml(p)}</span>` : tcy(escapeHtml(p))))
+    .join("");
+
 /**
  * 台本を HTML にする
  * opts = { togaki: true（ト書きも出す）, getPart, title: 題, css: 文字列, summary: count.summary の結果 }
@@ -144,7 +171,7 @@ export function build(records, cfg, opts) {
   const vertical = pdf.vertical !== false;
   const { items: list, missing } = items(records, cfg, { ...opts, vertical });
 
-  const plainHtml = (s) => (vertical ? tcy(escapeHtml(s)) : escapeHtml(s));
+  const plainHtml = (s) => (!vertical ? escapeHtml(s) : pdf.upright ? upright(s) : tcy(escapeHtml(s)));
   const textHtml = (s) =>
     splitRuby(s, cfg.ruby)
       .map((p) => (p.text !== undefined ? plainHtml(p.text) : `<ruby>${plainHtml(p.base)}<rt>${escapeHtml(p.reading)}</rt></ruby>`))
@@ -169,7 +196,7 @@ export function build(records, cfg, opts) {
         if (html.startsWith(name)) html = `<span class="speaker">${name}</span>` + html.slice(name.length);
       }
       if (it.lead !== undefined) html = `<span class="lead">${textHtml(it.lead)}</span>` + html;
-      body.push(`<p class="${it.class}">${html}</p>`);
+      body.push(`<p class="${it.class}${it.shade !== undefined ? ` shade-${it.shade}` : ""}">${html}</p>`);
     }
   }
 
@@ -232,5 +259,8 @@ export function css(pdf) {
     ".tcy { text-combine-upright: all; }",
     ".count-list { margin-block: 1em; }",
     ".count-total { font-weight: bold; }",
+    // 足した設定の見た目は、使う時だけ（使わなければ daihon と同じ CSS のまま）
+    ...(vertical && pdf.upright ? [".up { text-orientation: upright; }"] : []),
+    ...Object.values(isTableOf(pdf.shade) ? pdf.shade : {}).map((c, i) => `.shade-${i} { background: ${cssValue(c, "transparent")}; }`),
   ].join("\n");
 }

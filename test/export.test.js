@@ -87,6 +87,46 @@ test("書き出し：1〜2桁の数字だけ縦中横", () => {
   has(s, '<span class="tcy">1</span> と <span class="tcy">12</span> と 123 と １');
 });
 
+test("書き出し：upright でローマ字と3桁以上の数字を立てる（1〜2桁は縦中横のまま）。横書きでは何もしない", () => {
+  const up = { export: { pdf: { upright: true } } };
+  const s = html(["(SE:足音) 12 と 123 と BGV_01 と a&b"], true, up).html;
+  has(s, '<span class="up">SE</span>:足音');
+  has(s, '<span class="tcy">12</span> と <span class="up">123</span>');
+  has(s, '<span class="up">BGV</span>_<span class="tcy">01</span>');
+  has(s, '<span class="up">a</span>&amp;<span class="up">b</span>'); // &amp; の中の字はさわらない
+  has(s, ".up { text-orientation: upright; }");
+  const off = html(["SE 123"], true).html;
+  hasnt(off, 'class="up"');
+  hasnt(off, ".up {");
+  const yoko = html(["SE 123"], true, { export: { pdf: { upright: true, vertical: false } } }).html;
+  hasnt(yoko, 'class="up"');
+});
+
+test("書き出し：shade で話す人の行から空行・ト書き・ほかの人の行の手前まで網掛け", () => {
+  const sh = { split_lead: true, export: { pdf: { shade: { ルル: "#FFF2CC", 両方: "#DDEBF7" } } } };
+  const lines = ["(ルル)ふふ", "続き", "", "(ヴィヴィ)おい", "まだ", "(ルル)ねぇ", "(SE:足音)", "その後", "(両方)せーの", "## Track 02", "見出しの後"];
+  const s = html(lines, true, sh).html;
+  has(s, '<p class="serifu shade-0"><span class="lead">(ルル)</span>ふふ</p>');
+  has(s, '<p class="serifu shade-0">続き</p>');
+  has(s, '<p class="serifu"><span class="lead">(ヴィヴィ)</span>おい</p>');
+  has(s, '<p class="serifu">まだ</p>');
+  has(s, '<p class="serifu shade-0"><span class="lead">(ルル)</span>ねぇ</p>');
+  has(s, '<p class="t-場面">(SE:足音)</p>');
+  has(s, '<p class="serifu">その後</p>');
+  has(s, '<p class="serifu shade-1"><span class="lead">(両方)</span>せーの</p>');
+  has(s, '<p class="serifu">見出しの後</p>');
+  has(s, ".shade-0 { background: #FFF2CC; }");
+  has(s, ".shade-1 { background: #DDEBF7; }");
+  // ト書きなしでも、かっこは消えて網掛けは残る
+  const b = html(lines, false, sh).html;
+  has(b, '<p class="serifu shade-0">ふふ</p>');
+  // multi の名前でも決まる。色の値から CSS を抜け出せない
+  const m = html(["ルル「やあ」", "ヴィヴィ「よう」"], true, { mode: "multi", export: { pdf: { shade: { ルル: "red;} body{display:none" } } } }).html;
+  has(m, 'class="serifu shade-0"><span class="speaker">ルル</span>');
+  has(m, ".shade-0 { background: red bodydisplay:none; }");
+  hasnt(m, "body{display");
+});
+
 test("render：ト書きあり／なしの2つ。both = false で1つ", () => {
   const two = render("ただいま\n", makeConfig({}), { name: "x" });
   assert.deepEqual(

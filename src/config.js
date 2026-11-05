@@ -82,6 +82,8 @@ export const defaults = {
       new_page: 2,
       serifu_indent: "3em",
       vertical_marks: { open: "◀", close: "▶" },
+      upright: false, // 縦書きでローマ字と3桁以上の数字を立てる（4iii だけ）
+      shade: undefined, // 話す人ごとの網掛け { "ルル": "#FFF2CC" }。split_lead のかっこ「(ルル)」か multi の名前で決める（4iii だけ）
       css: undefined, // 自分の CSS（作品フォルダからの場所）
       command: undefined, // daihon では nvim の設定でだけ変えられる。ここでは使わない
     },
@@ -156,6 +158,15 @@ export function validate(cfg) {
   for (const [i, h] of headings.entries()) {
     if (!Number.isInteger(h.level) || h.level < 1 || h.prefix === undefined || h.prefix === null || h.prefix === "") {
       return fail(`headings の ${i + 1} 番目には level（1 からの整数）と prefix が要ります`);
+    }
+  }
+  const pdf = getPath(cfg, ["export", "pdf"]) ?? {};
+  if (pdf.upright !== undefined && typeof pdf.upright !== "boolean") {
+    return fail(`export.pdf.upright は true か false です（今は ${show(pdf.upright)}）`);
+  }
+  if (pdf.shade !== undefined && pdf.shade !== null) {
+    if (!isTable(pdf.shade) || Array.isArray(pdf.shade) || Object.values(pdf.shade).some((c) => typeof c !== "string")) {
+      return fail(`export.pdf.shade は { "名前": "色" } で書いてください（今は ${show(pdf.shade)}）`);
     }
   }
   for (const key of ["parts_dir", "export.dir", "export.pdf.css"]) {

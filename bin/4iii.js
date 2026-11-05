@@ -1,15 +1,17 @@
 #!/usr/bin/env node
-// 台本の .txt から、縦書きの HTML（ト書きあり／なし）を作り、vivliostyle があれば PDF も作る
-// 使い方：4iii.js 台本.txt [--config 4iii.json] [--out out/] [--no-pdf]
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+// 台本の .txt（か Word の .docx）から、縦書きの HTML（ト書きあり／なし）を作り、vivliostyle があれば PDF も作る
+// 使い方：4iii.js 台本.txt|台本.docx [--config 4iii.json] [--out out/] [--no-pdf]
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, renameSync, rmSync } from "node:fs";
 import { dirname, join, basename, extname, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { makeConfig, render, splitLines, validPartName } from "../src/index.js";
 import { stripGlobalOnly } from "../src/config.js";
+import { docxLines } from "./docx.js";
 
 const PDF_TIMEOUT_MS = 5 * 60 * 1000; // PDF 1つにかける時間の上限
 
-const USAGE = `使い方：4iii.js 台本.txt [--config 4iii.json] [--out out/] [--no-pdf]
+const USAGE = `使い方：4iii.js 台本.txt|台本.docx [--config 4iii.json] [--out out/] [--no-pdf]
+  .docx は本文の段落を1行ずつ読み、書き出し先に同じ名前の .txt も置く（PDF と一緒に渡すテキスト）
   --config  設定（daihon.lua の opts と同じ意味の JSON）。無ければ台本と同じフォルダの 4iii.json（無ければ daihon.json）
   --out     書き出し先。無ければ設定の export.dir（既定 out）
   --no-pdf  HTML だけ作る`;
@@ -82,7 +84,9 @@ function main(argv) {
   const outDir = args.out ? resolve(args.out) : join(root, cfg.export.dir);
   mkdirSync(outDir, { recursive: true });
   const name = basename(script, extname(script));
-  const { outputs, missing } = render(readText(script), cfg, { name, getPart, css });
+  const isDocx = extname(script).toLowerCase() === ".docx";
+  const text = isDocx ? docxLines(readFileSync(script)) : readText(script);
+  const { outputs, missing } = render(text, cfg, { name, getPart, css });
 
   const show = (p) => {
     const rel = relative(process.cwd(), p);
@@ -94,17 +98,33 @@ function main(argv) {
     console.log(`4iii: 書き出しました：${show(path)}`);
     return { name: o.name, html: path, pdf: join(outDir, `${o.name}.pdf`) };
   });
+  if (isDocx) {
+    const path = join(outDir, `${name}.txt`);
+    writeFileSync(path, text.join("\n") + "\n");
+    console.log(`4iii: 書き出しました：${show(path)}`);
+  }
   if (missing.length > 0) console.warn(`4iii: 未登録の塊はそのまま出しました：${missing.join("、")}`);
   if (!args.pdf) return 0;
 
   // PDF は1つずつ作る（同時に作ると Vivliostyle がぶつかる）
   let code = 0;
+  // vivliostyle は名前の「#」「?」を URL の印と読んで止まるので、決まった名前で作ってから名前を戻す
+  const tmpHtml = join(outDir, ".4iii-build.html");
+  const tmpPdf = join(outDir, ".4iii-build.pdf");
   for (const job of htmlPaths) {
-    const res = spawnSync("vivliostyle", ["build", job.html, "-o", job.pdf], {
-      cwd: outDir,
-      encoding: "utf8",
-      timeout: PDF_TIMEOUT_MS,
-    });
+    copyFileSync(job.html, tmpHtml);
+    let res;
+    try {
+      res = spawnSync("vivliostyle", ["build", tmpHtml, "-o", tmpPdf], {
+        cwd: outDir,
+        encoding: "utf8",
+        timeout: PDF_TIMEOUT_MS,
+      });
+      if (res.status === 0) renameSync(tmpPdf, job.pdf);
+    } finally {
+      rmSync(tmpHtml, { force: true });
+      rmSync(tmpPdf, { force: true });
+    }
     if (res.error && res.error.code === "ENOENT") {
       console.log("4iii: vivliostyle が無いので HTML だけ作りました（PDF には npm install -g @vivliostyle/cli）");
       return 0;

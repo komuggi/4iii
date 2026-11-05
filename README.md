@@ -48,12 +48,18 @@ node bin/4iii.js 台本.txt [--config 4iii.json] [--out out/] [--no-pdf]
 ```
 
 ト書きあり／なしの HTML を書き、`vivliostyle` があれば PDF も作ります（無ければ HTML だけ）。
+台本は Word（`.docx`）でも渡せます。本文の段落を1行ずつ読み、書き出し先に同じ名前の `.txt` も置きます（PDF と一緒にテキストを渡す時に使う）。
 `--config` が無ければ、台本と同じフォルダの `4iii.json`（無ければ `daihon.json`）を読みます。CLI は塊を読みます（設定のあるフォルダの `parts/` から。読まないなら設定に `"blocks": false`）。
 
 ## 設定（4iii.json）
 
 daihon の `daihon.lua` と同じ意味・同じ既定値を JSON で書きます。例：`test/fixtures/sample/daihon.json`。
 nvim の画面だけの設定（keys・show_count など）は読んでも使いません。`export.pdf.command` は使いません。
+
+4iii だけの設定（daihon には無い・書かなければ今までと同じ HTML）：
+
+- `export.pdf.upright`：`true` で、縦書きのローマ字と3桁以上の数字を立てる（1〜2桁の数字は今までどおり縦中横）
+- `export.pdf.shade`：話す人ごとの網掛け。`{ "ルル": "#FFF2CC", "両方": "#DDEBF7" }` のように名前と色。行の頭のかっこ（`split_lead` の「(ルル)」）か multi の名前で決め、空行・見出し・ト書き・ほかの人の行の手前まで続く。声優さんに自分の役の所を見分けてもらう時に使う
 
 ## 部品として使う
 

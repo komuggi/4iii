@@ -50,3 +50,24 @@ test("CLI：まちがった設定・無い台本は止まって知らせる", ()
   assert.equal(res.status, 1);
   assert.match(res.stderr, /台本が見つかりません/);
 });
+
+test("CLI：名前に # のある台本でも PDF を作れる（vivliostyle には決まった名前で渡す）", () => {
+  const dir = mkdtempSync(join(tmpdir(), "4iii-"));
+  const bin = join(dir, "bin");
+  mkdirSync(bin);
+  // 試し用の vivliostyle：渡された名前を控えて、-o の所に PDF の代わりを書く
+  writeFileSync(
+    join(bin, "vivliostyle"),
+    `#!/bin/sh\necho "$2" >> "${join(dir, "args.txt")}"\ncase "$2" in *#*) exit 1;; esac\necho pdf > "$4"\n`,
+    { mode: 0o755 },
+  );
+  writeFileSync(join(dir, "#03 台本.txt"), "ただいま\n");
+  const res = spawnSync(process.execPath, [BIN, join(dir, "#03 台本.txt")], {
+    encoding: "utf8",
+    env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+  });
+  assert.equal(res.status, 0, res.stderr + res.stdout);
+  assert.ok(existsSync(join(dir, "out", "#03 台本_ト書きあり.pdf")));
+  assert.ok(!readFileSync(join(dir, "args.txt"), "utf8").includes("#"));
+  assert.ok(!existsSync(join(dir, "out", ".4iii-build.html")));
+});
