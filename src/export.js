@@ -189,6 +189,12 @@ export function build(records, cfg, opts) {
     if (inKeep) body.push("</div>");
     inKeep = false;
   };
+  // 役名（hang_lead で字下げへ出す名前）：shade・dim・characters に書いた名前。指示のかっこ（「(▼扉の向こうの声)」）は入れない
+  const roles = new Set([
+    ...Object.keys(isTableOf(pdf.shade) ? pdf.shade : {}),
+    ...(Array.isArray(pdf.dim) ? pdf.dim : []),
+    ...(Array.isArray(cfg.characters) ? cfg.characters : []).map((c) => (typeof c === "string" ? c : c && c.name)),
+  ]);
   // 行番号は最初の見出しから（見出しが無ければ全部）
   const firstHeading = pdf.line_numbers ? list.findIndex((it) => it.kind === "heading") : -1;
   for (const [i, it] of list.entries()) {
@@ -214,7 +220,11 @@ export function build(records, cfg, opts) {
         const name = textHtml(it.speaker);
         if (html.startsWith(name)) html = `<span class="speaker">${name}</span>` + html.slice(name.length);
       }
-      if (it.lead !== undefined) html = `<span class="lead">${textHtml(it.lead)}</span>` + html;
+      if (it.lead !== undefined) {
+        // hang_lead：役名だけのかっこ（「(ルル)」）は字下げの所へ出し、台詞の頭を続きの行とそろえる
+        const who = pdf.hang_lead && roles.has(speakerOf({ lead: it.lead })) ? " who" : "";
+        html = `<span class="lead${who}">${textHtml(it.lead)}</span>` + html;
+      }
       const pre = i < firstHeading ? " pre" : "";
       body.push(`<p class="${it.class}${it.shade !== undefined ? ` shade-${it.shade}` : ""}${it.dim ? " dim" : ""}${pre}">${html}</p>`);
     }
@@ -231,6 +241,7 @@ export function build(records, cfg, opts) {
     css(pdf),
     // split_lead のかっこがある時だけ（無ければ daihon と同じ CSS のまま）
     ...(list.some((it) => it.lead !== undefined) ? [LEAD_CSS] : []),
+    ...(pdf.hang_lead && list.some((it) => it.lead !== undefined) ? [hangCss(cssValue(pdf.serifu_indent, "3em"))] : []),
     safeCss(opts.css),
     "</style>",
     "</head>",
@@ -244,6 +255,9 @@ export function build(records, cfg, opts) {
 }
 
 const LEAD_CSS = ".lead { font-size: 0.9em; color: #555; margin-inline-end: 0.5em; }";
+// 役名を字下げ（serifu_indent）の中に入れ、台詞の頭の手前にそろえる。役名の字は 0.9em なので、幅は字下げ ÷ 0.9
+const hangCss = (indent) =>
+  `.lead.who { display: inline-block; box-sizing: border-box; inline-size: calc(${indent} / 0.9); margin-inline-start: calc(${indent} / -0.9); margin-inline-end: 0; padding-inline-end: 0.5em; text-align: end; }`;
 const or = (v, fallback) => (v === undefined || v === null || v === false ? fallback : v);
 // 設定から <style> に入れる値：CSS や HTML を抜け出せる記号（< > { } ;）は外す
 const cssValue = (v, fallback) => String(or(v, fallback)).replace(/[<>{};]/g, "");

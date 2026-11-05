@@ -34,6 +34,7 @@ test("設定：まちがいを知らせる", () => {
   eq(validate(cfg({ headings: [{ level: 1.5, prefix: "# " }] })).ok, false);
   eq(validate(cfg({ export: { pdf: { upright: "yes" } } })).ok, false);
   eq(validate(cfg({ export: { pdf: { line_numbers: 2 } } })).ok, false);
+  eq(validate(cfg({ export: { pdf: { hang_lead: "yes" } } })).ok, false);
   eq(validate(cfg({ export: { pdf: { dim: "ヴィヴィ" } } })).ok, false);
   eq(validate(cfg({ export: { pdf: { dim: ["ヴィヴィ"] } } })).ok, true);
   eq(validate(cfg({ export: { pdf: { shade: ["ルル"] } } })).ok, false);

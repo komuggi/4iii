@@ -162,6 +162,16 @@ test("書き出し：dim で読まない役の行を薄く（決め方は shade 
   hasnt(html(["おい"], true).html, "dim");
 });
 
+test("書き出し：hang_lead で役名だけのかっこを字下げの所へ（指示のかっこはそのまま）", () => {
+  const o = { split_lead: true, export: { pdf: { hang_lead: true, serifu_indent: "6em", dim: ["ヴィヴィ"] } }, characters: ["ルル"] };
+  const s = html(["(ルル)ふふ", "続き", "(ヴィヴィ)おい", "(恥ずかしそうに)ねぇ"], true, o).html;
+  has(s, '<span class="lead who">(ルル)</span>ふふ');
+  has(s, '<span class="lead who">(ヴィヴィ)</span>おい');
+  has(s, '<span class="lead">(恥ずかしそうに)</span>ねぇ'); // 役名に無い名前は指示として、そのまま
+  has(s, ".lead.who { display: inline-block; box-sizing: border-box; inline-size: calc(6em / 0.9); margin-inline-start: calc(6em / -0.9);");
+  hasnt(html(["(ルル)ふふ"], true, { split_lead: true }).html, "who");
+});
+
 test("render：ト書きあり／なしの2つ。both = false で1つ", () => {
   const two = render("ただいま\n", makeConfig({}), { name: "x" });
   assert.deepEqual(
