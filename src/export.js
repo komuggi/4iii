@@ -66,14 +66,17 @@ export function items(records, cfg, opts) {
   const shadeNames = isTableOf(pdf.shade) ? Object.keys(pdf.shade) : [];
   const dimNames = Array.isArray(pdf.dim) ? pdf.dim : [];
   const roles = roleNames(cfg);
+  const marks = Array.isArray(pdf.mark) ? pdf.mark.filter((w) => typeof w === "string" && w !== "") : [];
   const note = typeof pdf.role_note === "string" && pdf.role_note !== "" ? pdf.role_note : undefined;
-  const byRole = roles.size > 0;
+  const byRole = roles.size > 0 || marks.length > 0;
   let role; // 今の話す人（役名の行から）
   let trackRole; // role_note で決めた、この見出しの中の役
   let declared; // この行が role_note の行ならその役
   const line = (r, text, lead) => {
     const own = declared ?? role;
-    const shade = own !== undefined && shadeNames.includes(own) ? shadeNames.indexOf(own) : undefined;
+    // mark：ト書きの行にこの字があれば、最初の役（shade の1番目）の色にする（その役に関わる指示を目立たせる）
+    const marked = r.kind !== "セリフ" && marks.length > 0 && shadeNames.length > 0 && marks.some((w) => String(r.text).includes(w));
+    const shade = marked ? 0 : own !== undefined && shadeNames.includes(own) ? shadeNames.indexOf(own) : undefined;
     const dimRole = own ?? (r.kind === "セリフ" ? trackRole : undefined);
     const dim = dimRole !== undefined && dimNames.includes(dimRole);
     const hang = role !== undefined && roles.has(role);

@@ -37,6 +37,7 @@ test("設定：まちがいを知らせる", () => {
   eq(validate(cfg({ export: { pdf: { hang_lead: 3 } } })).ok, false);
   eq(validate(cfg({ export: { pdf: { hang_lead: "6em", role_note: "全て" } } })).ok, true);
   eq(validate(cfg({ export: { pdf: { role_note: ["全て"] } } })).ok, false);
+  eq(validate(cfg({ export: { pdf: { mark: "BGV" } } })).ok, false);
   eq(validate(cfg({ export: { pdf: { dim: "ヴィヴィ" } } })).ok, false);
   eq(validate(cfg({ export: { pdf: { dim: ["ヴィヴィ"] } } })).ok, true);
   eq(validate(cfg({ export: { pdf: { shade: ["ルル"] } } })).ok, false);

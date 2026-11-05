@@ -194,6 +194,15 @@ test("書き出し：role_note の行は役の網掛け。次の見出しまで�
   has(html(["(このトラックのセリフは全てだれか)", "ひとり"], true, o).html, '<p class="serifu">ひとり</p>'); // 役名に無い名前は読まない
 });
 
+test("書き出し：mark の字のあるト書きは最初の役の色（台詞と、字の無いト書きはそのまま）", () => {
+  const o = { split_lead: true, export: { pdf: { shade: { ルル: "#FFF2CC" }, mark: ["BGV_01"], vertical_marks: false } } };
+  const s = html(["(▼BGV_01_喘ぎ声)", "(▼BGV_03_キス)", "BGV_01 のことば"], true, o).html;
+  has(s, '<p class="t-場面 shade-0">(▼BGV_<span class="tcy">01</span>_喘ぎ声)</p>');
+  has(s, '<p class="t-場面">(▼BGV_<span class="tcy">03</span>_キス)</p>');
+  has(s, 'のことば</p>');
+  hasnt(s, 'class="serifu shade-0"');
+});
+
 test("render：ト書きあり／なしの2つ。both = false で1つ", () => {
   const two = render("ただいま\n", makeConfig({}), { name: "x" });
   assert.deepEqual(
