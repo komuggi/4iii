@@ -1,7 +1,7 @@
 # 4iii
 
 音声作品の台本（.txt）を、縦書きの HTML（ト書きあり／なし）にして PDF にします。セリフだけの文字数も数えます。
-書き方・設定・出てくる HTML は、nvim のプラグイン [daihon](https://github.com/komuggi/daihon) と同じです（元は daihon の「台本 → 縦書きの HTML」の所を、nvim なしで動くようにした物。ルビは 4iii にしかありません）。
+書き方・設定・出てくる HTML は、nvim のプラグイン [4iii.nvim](https://github.com/komuggi/4iii.nvim)（前の名前は daihon）と同じです（元は 4iii.nvim の「台本 → 縦書きの HTML」の所を、nvim なしで動くようにした物。ルビは 4iii にしかありません）。
 
 ## ページ（Google ドキュメントから貼って PDF に）
 
@@ -18,7 +18,7 @@ python3 -m http.server   # このフォルダで打つ
 - 「縦書き／横書き」「ト書きあり／なし」で切り替え、右上の「Export」→「PDF」→ 印刷の画面で「ヘッダーとフッター」の印を外し（付いたままだと日付と題が入る）、「PDF に保存」（テキスト・Markdown は今は選べません）
 - ルビ：`|漢字《かんじ》`・`漢字《かんじ》`（| が無いときは《 の前に続く漢字）・`[[rb:漢字 > かんじ]]`（pixiv）を読みます。記号は「ルビの書き方」で変えられます。ルビの字は文字数に入れません
 - 「この設定で保存」で、記号などの設定を `4iii.json` としてこの PC に落とします。次からは「設定を開く」で選びます（ログインは要りません。CLI もそのまま読めます）
-- 貼るとき、日本語入力のままの記号（行の頭の `／／` `＃` `（` `￥`、`｛｝` など）は daihon で打ったときと同じに半角にします
+- 貼るとき、日本語入力のままの記号（行の頭の `／／` `＃` `（` `￥`、`｛｝` など）は 4iii.nvim で打ったときと同じに半角にします
 - 行の頭がその記号で始まる行を、その種類にします（行の頭の空白は見ません）。どれにも当たらない行は、記号で始まっていてもセリフです
 - 見出し（トラック）の欄の記号で始まる行で、PDF のページが変わり、トラックごとの文字数を出します。`##` のような記号は頭を消し、`トラック` のような字は「トラック①」のまま見出しにします
 - ページは、最初の見出し（トラック）より前の行（仕様書など）を文字数に入れません（見出しが無ければ全部数えます。設定では `count.skip_before_heading`）
@@ -53,10 +53,10 @@ node bin/4iii.js 台本.txt [--config 4iii.json] [--out out/] [--no-pdf]
 
 ## 設定（4iii.json）
 
-daihon の `daihon.lua` と同じ意味・同じ既定値を JSON で書きます。例：`test/fixtures/sample/daihon.json`。
+4iii.nvim の `4iii.lua` と同じ意味・同じ既定値を JSON で書きます。例：`test/fixtures/sample/daihon.json`。
 nvim の画面だけの設定（keys・show_count など）は読んでも使いません。`export.pdf.command` は使いません。
 
-4iii だけの設定（daihon には無い・書かなければ今までと同じ HTML）：
+4iii だけの設定（4iii.nvim には無い・書かなければ今までと同じ HTML）：
 
 - `export.pdf.upright`：`true` で、縦書きのローマ字と3桁以上の数字を立てる（1〜2桁の数字は今までどおり縦中横）
 - `export.pdf.line_numbers`：`true` で、本文の行（セリフとト書き）に通しの番号。最初の見出し（トラック）から数え、空行・見出しは数えない。縦書きはページの上にそろえて、その行の最初の列の真上に出す（横書きは行の左の余白）
@@ -80,8 +80,8 @@ const { outputs, missing } = render(text, makeConfig({ mode: "multi" }), { name:
 node --test
 ```
 
-`test/fixtures/` の HTML は、元の daihon（Lua）が作った物です（`test/make_expected.lua`・daihon のコミットは `DAIHON_COMMIT`）。daihon を直したら作り直して、ここも同じ結果になるかを確かめます。
+`test/fixtures/` の HTML は、元の 4iii.nvim（Lua）が作った物です（`test/make_expected.lua`・4iii.nvim のコミットは `DAIHON_COMMIT`）。4iii.nvim を直したら作り直して、ここも同じ結果になるかを確かめます。
 
 ```sh
-nvim --headless -l test/make_expected.lua ~/tools/daihon test/fixtures/*/
+nvim --headless -l test/make_expected.lua ~/tools/4iii.nvim test/fixtures/*/
 ```

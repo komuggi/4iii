@@ -1,16 +1,16 @@
 -- 正解の HTML を、元の daihon（Lua）で作る。daihon の中は読むだけ
--- 使い方：nvim --headless -l test/make_expected.lua <daihon のフォルダ> <ケースのフォルダ>...
+-- 使い方：nvim --headless -l test/make_expected.lua <4iii.nvim のフォルダ> <ケースのフォルダ>...
 -- ケースのフォルダ：台本の .txt を1つ・daihon.lua か daihon.json・parts/（あれば）
 -- 書く物：<ケース>/expected/<名前>_ト書きあり.html（と _ト書きなし.html）・missing.json
 -- daihon.lua があって daihon.json が無ければ、daihon.json も作る（作り直すときは daihon.json を 99-trash へ）
 -- .txt の無いフォルダは飛ばす
-local daihon_dir = assert(arg[1], "daihon のフォルダを渡してください")
+local daihon_dir = assert(arg[1], "4iii.nvim のフォルダを渡してください")
 package.path = daihon_dir .. "/lua/?.lua;" .. daihon_dir .. "/lua/?/init.lua;" .. package.path
 
-local config = require("daihon.config")
-local parse = require("daihon.parse")
-local count = require("daihon.count")
-local export = require("daihon.export")
+local config = require("4iii.config")
+local parse = require("4iii.parse")
+local count = require("4iii.count")
+local export = require("4iii.export")
 
 local function write(path, data)
   local f = assert(io.open(path, "wb"))
