@@ -86,3 +86,9 @@ node --test
 ```sh
 nvim --headless -l test/make_expected.lua ~/tools/4iii.nvim test/fixtures/*/
 ```
+
+## 直したいとき
+
+プルリクエストは受け付けていません。現状のまま（as-is・MIT）公開しています。
+直したい所があれば、フォークして自分用に直して使ってください。AI に直させてもかまいません。
+不具合や案は Issue へどうぞ。
