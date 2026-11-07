@@ -60,7 +60,7 @@ test("枠：開いたときの記号で、SE・演技指示・その他・セリ
   );
   eq(res.summary.total, 7);
   const [withT, withoutT] = res.outputs;
-  assert.match(withT.html, /class="t-指示">SE：ドアが開く/);
+  assert.match(withT.html, /class="t-指示"><span class="up">SE<\/span>：ドアが開く/);
   assert.doesNotMatch(withT.html, /メモ/);
   assert.doesNotMatch(withoutT.html, /ドアが開く|夕方/);
 });
@@ -90,8 +90,8 @@ test("枠：読む・書くで元に戻る。その他を出す・空の枠は�
 test("枠：横書きは紙を A4 縦にし、縦書きに戻すと元に戻す。自分で書いた紙は変えない", () => {
   const f = fields.read(fields.START);
   const h = fields.write(fields.START, { ...f, vertical: false });
-  eq(h.export.pdf, { vertical: false, size: "A4 portrait" });
-  eq(fields.write(h, { ...f, vertical: true }).export.pdf, { vertical: true });
+  eq(h.export.pdf, { upright: true, vertical: false, size: "A4 portrait" });
+  eq(fields.write(h, { ...f, vertical: true }).export.pdf, { upright: true, vertical: true });
   const b5 = fields.write({ export: { pdf: { size: "B5" } } }, { ...f, vertical: false });
   eq(b5.export.pdf.size, "B5");
 });

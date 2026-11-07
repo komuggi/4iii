@@ -19,6 +19,8 @@ export const START = {
     { name: "指示", prefix: ["//", "(", "（", "【"] },
     { name: "メモ", prefix: ["¥", "￥"], output: false },
   ],
+  // 縦書きでローマ字と3桁以上の数字が横に寝ないように
+  export: { pdf: { upright: true } },
 };
 
 /** 枠に打った記号を分ける（、 , ， と改行で区切る） */
